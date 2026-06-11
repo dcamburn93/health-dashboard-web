@@ -738,7 +738,7 @@ async function loadAll() {
   const totalMiles = runs.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34;
   const totalSwim = swims.reduce((s,w)=>s+(w.distance_m||0),0);
   document.getElementById('week-miles').textContent = totalMiles>0?totalMiles.toFixed(1):'0';
-  document.getElementById('week-swim').textContent = totalSwim>0?Math.round(totalSwim):'0';
+  document.getElementById('week-swim').textContent = totalSwim>0?Math.round(totalSwim*1.09361):'0';
   document.getElementById('week-lifts').textContent = lifts.length;
 
   // TODAY PLAN
@@ -834,14 +834,14 @@ function openModal(type) {
     const lifts = gWorkoutsWeek.filter(w=>sportMatch(w.sport_type,'lift'));
     const bikes = gWorkoutsWeek.filter(w=>sportMatch(w.sport_type,'bike'));
     const totalMiles = (runs.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(1);
-    const totalSwim = Math.round(swims.reduce((s,w)=>s+(w.distance_m||0),0));
+    const totalSwim = Math.round(swims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
     const totalBike = (bikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(1);
     const totalTime = Math.round(gWorkoutsWeek.reduce((s,w)=>s+(w.duration_s||0),0)/60);
 
     // Sport summary cards
     const sportCards = [
       {label:'Run', value:totalMiles+' mi', sub:runs.length+' session'+(runs.length!==1?'s':''), color:'#D97706', bg:'rgba(217,119,6,0.08)', key:'run'},
-      {label:'Swim', value:totalSwim+' m', sub:swims.length+' session'+(swims.length!==1?'s':''), color:'#0EA5A0', bg:'rgba(14,165,160,0.08)', key:'swim'},
+      {label:'Swim', value:totalSwim+' yds', sub:swims.length+' session'+(swims.length!==1?'s':''), color:'#0EA5A0', bg:'rgba(14,165,160,0.08)', key:'swim'},
       {label:'Lift', value:lifts.length+' session'+(lifts.length!==1?'s':''), sub:Math.round(lifts.reduce((s,w)=>s+(w.duration_s||0),0)/60)+' min total', color:'#3B6FE8', bg:'rgba(59,111,232,0.08)', key:'lift'},
     ];
     if (parseFloat(totalBike)>0) sportCards.push({label:'Bike', value:totalBike+' mi', sub:bikes.length+' session'+(bikes.length!==1?'s':''), color:'#7C3AED', bg:'rgba(124,58,237,0.08)', key:'bike'});
@@ -859,7 +859,7 @@ function openModal(type) {
     // All workouts
     document.getElementById('training-workouts').innerHTML = gWorkoutsWeek.map(w=>{
       const sc = sportColor(w.sport_type);
-      const dist = w.distance_m>0?(w.sport_type?.toLowerCase().includes('swim') ? Math.round(w.distance_m)+' m' : (w.distance_m/1609.34).toFixed(1)+' mi'):'';
+      const dist = w.distance_m>0?(w.sport_type?.toLowerCase().includes('swim') ? Math.round(w.distance_m*1.09361)+' yds' : (w.distance_m/1609.34).toFixed(1)+' mi'):'';
       const dur = w.duration_s>0?Math.round(w.duration_s/60)+' min':'';
       const pace = w.sport_type?.toLowerCase().includes('run')&&w.distance_m>0&&w.duration_s>0
         ? (() => { const spm = w.duration_s/(w.distance_m/1609.34); return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi'; })() : '';
@@ -1087,7 +1087,7 @@ async function openSportDetail(sportKey) {
   // Recent sessions
   html += `<div class="section-label" style="margin-top:4px">Recent Sessions</div>`;
   for (const w of filtered.slice(0,10)) {
-    const dist = w.distance_m>0?(isSwim?Math.round(w.distance_m)+' m':(w.distance_m/1609.34).toFixed(1)+' mi'):'';
+    const dist = w.distance_m>0?(isSwim?Math.round(w.distance_m*1.09361)+' yds':(w.distance_m/1609.34).toFixed(1)+' mi'):'';
     const dur = w.duration_s>0?Math.round(w.duration_s/60)+' min':'';
     const pace = isRun&&w.distance_m>0&&w.duration_s>0
       ? (()=>{const spm=w.duration_s/(w.distance_m/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '';
