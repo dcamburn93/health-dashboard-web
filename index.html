@@ -311,9 +311,17 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 <div class="modal" id="modal-training">
   <div class="modal-handle"></div>
   <div class="modal-title">This Week</div>
-  <div id="training-stats-detail"></div>
-  <div class="section-label" style="margin-top:20px">Workouts</div>
+  <div id="training-sport-cards"></div>
+  <div class="section-label" style="margin-top:20px">All Workouts</div>
   <div id="training-workouts"></div>
+</div>
+
+<!-- SPORT DETAIL MODAL -->
+<div class="modal" id="modal-sport">
+  <div class="modal-handle"></div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:12px;cursor:pointer;font-weight:500" onclick="openModal('training')">&#8592; Back to This Week</div>
+  <div class="modal-title" id="sport-modal-title"></div>
+  <div id="sport-detail-content"></div>
 </div>
 
 <!-- PLAN MODAL -->
@@ -596,15 +604,29 @@ function openModal(type) {
     const totalSwim = Math.round(swims.reduce((s,w)=>s+(w.distance_m||0),0));
     const totalBike = (bikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(1);
     const totalTime = Math.round(gWorkoutsWeek.reduce((s,w)=>s+(w.duration_s||0),0)/60);
-    document.getElementById('training-stats-detail').innerHTML = `
-      <div class="stat-row"><span class="stat-key">Running</span><span class="stat-val">${totalMiles} mi</span></div>
-      <div class="stat-row"><span class="stat-key">Swimming</span><span class="stat-val">${totalSwim} m</span></div>
-      <div class="stat-row"><span class="stat-key">Cycling</span><span class="stat-val">${totalBike} mi</span></div>
-      <div class="stat-row"><span class="stat-key">Lifts</span><span class="stat-val">${lifts.length} sessions</span></div>
-      <div class="stat-row"><span class="stat-key">Total Time</span><span class="stat-val">${totalTime} min</span></div>`;
+
+    // Sport summary cards
+    const sportCards = [
+      {label:'Run', value:totalMiles+' mi', sub:runs.length+' session'+(runs.length!==1?'s':''), color:'#D97706', bg:'rgba(217,119,6,0.08)', key:'run'},
+      {label:'Swim', value:totalSwim+' m', sub:swims.length+' session'+(swims.length!==1?'s':''), color:'#0EA5A0', bg:'rgba(14,165,160,0.08)', key:'swim'},
+      {label:'Lift', value:lifts.length+' session'+(lifts.length!==1?'s':''), sub:Math.round(lifts.reduce((s,w)=>s+(w.duration_s||0),0)/60)+' min total', color:'#3B6FE8', bg:'rgba(59,111,232,0.08)', key:'lift'},
+    ];
+    if (parseFloat(totalBike)>0) sportCards.push({label:'Bike', value:totalBike+' mi', sub:bikes.length+' session'+(bikes.length!==1?'s':''), color:'#7C3AED', bg:'rgba(124,58,237,0.08)', key:'bike'});
+
+    document.getElementById('training-sport-cards').innerHTML = sportCards.map(c=>`
+      <div onclick="openSportDetail('${c.key}')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:${c.bg};border-radius:12px;margin-bottom:8px;cursor:pointer">
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${c.color};margin-bottom:4px">${c.label}</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);letter-spacing:-0.5px">${c.value}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px">${c.sub}</div>
+        </div>
+        <div style="color:var(--ink3);font-size:18px">›</div>
+      </div>`).join('');
+
+    // All workouts
     document.getElementById('training-workouts').innerHTML = gWorkoutsWeek.map(w=>{
       const sc = sportColor(w.sport_type);
-      const dist = w.distance_m>0?(w.distance_m/1609.34).toFixed(1)+' mi':'';
+      const dist = w.distance_m>0?(w.sport_type?.toLowerCase().includes('swim') ? Math.round(w.distance_m)+' m' : (w.distance_m/1609.34).toFixed(1)+' mi'):'';
       const dur = w.duration_s>0?Math.round(w.duration_s/60)+' min':'';
       const pace = w.sport_type?.toLowerCase().includes('run')&&w.distance_m>0&&w.duration_s>0
         ? (() => { const spm = w.duration_s/(w.distance_m/1609.34); return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi'; })() : '';
@@ -613,13 +635,15 @@ function openModal(type) {
           <span class="workout-tag" style="background:${sc.bg};color:${sc.color}">${sc.label}</span>
           <div>
             <div class="workout-name">${w.name||w.sport_type}</div>
-            <div style="font-size:11px;color:var(--ink3)">${w.date}</div>
+            <div style="font-size:11px;color:var(--ink3)">${fmtDate(w.date)}</div>
           </div>
         </div>
         <div class="workout-meta">${[dist,pace||dur].filter(Boolean).join(' · ')}</div>
       </div>`;
     }).join('');
   }
+
+  if (type==='sport') { /* handled by openSportDetail */ }
 
   if (type==='plan') {
     const cw = getCurrentWeek();
@@ -642,6 +666,86 @@ function openModal(type) {
       </div>`;
     }).join('');
   }
+}
+
+async function openSportDetail(sportKey) {
+  document.getElementById('overlay').classList.add('open');
+  document.querySelectorAll('.modal').forEach(m=>m.classList.remove('open'));
+  document.getElementById('modal-sport').classList.add('open');
+
+  const labels = {run:'Running',swim:'Swimming',lift:'Lifting',bike:'Cycling'};
+  const colors = {run:'#D97706',swim:'#0EA5A0',lift:'#3B6FE8',bike:'#7C3AED'};
+  document.getElementById('sport-modal-title').textContent = labels[sportKey]||sportKey;
+
+  // Fetch last 8 weeks of this sport
+  const eightWeeksAgo = new Date(); eightWeeksAgo.setDate(eightWeeksAgo.getDate()-56);
+  const since = eightWeeksAgo.toISOString().slice(0,10);
+  const allWorkouts = await q('workouts', `date=gte.${since}&order=date.desc&limit=50`);
+
+  let filtered;
+  if (sportKey==='run') filtered = allWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('run'));
+  else if (sportKey==='swim') filtered = allWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
+  else if (sportKey==='lift') filtered = allWorkouts.filter(w=>sportMatch(w.sport_type,'lift'));
+  else if (sportKey==='bike') filtered = allWorkouts.filter(w=>sportMatch(w.sport_type,'bike'));
+  else filtered = [];
+
+  const isSwim = sportKey==='swim';
+  const isLift = sportKey==='lift';
+  const isRun = sportKey==='run';
+
+  // Weekly totals for bar chart
+  const weekTotals = {};
+  for (const w of filtered) {
+    const d = new Date(w.date+'T12:00:00');
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day===0?-6:1);
+    const wk = new Date(d); wk.setDate(diff);
+    const wkStr = wk.toISOString().slice(0,10);
+    if (!weekTotals[wkStr]) weekTotals[wkStr] = {count:0, dist:0, dur:0};
+    weekTotals[wkStr].count++;
+    weekTotals[wkStr].dist += w.distance_m||0;
+    weekTotals[wkStr].dur += w.duration_s||0;
+  }
+
+  const wkKeys = Object.keys(weekTotals).sort().slice(-6);
+  const chartData = wkKeys.map(k=>{
+    const wk = weekTotals[k];
+    const lbl = new Date(k+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    let val;
+    if (isSwim) val = Math.round(wk.dist);
+    else if (isLift) val = wk.count;
+    else val = parseFloat((wk.dist/1609.34).toFixed(1));
+    return {l:lbl, v:val};
+  });
+
+  const chartColor = colors[sportKey]||'#9896A8';
+  const chartUnit = isSwim?'m':isLift?'sessions':'mi';
+
+  // Build HTML
+  let html = `<div class="section-label">Weekly ${isLift?'Sessions':isSwim?'Volume (m)':'Volume (mi)'} — Last 6 Weeks</div>`;
+  html += `<div class="bar-chart" id="sport-bar-chart" style="height:90px;margin:12px 0 16px"></div>`;
+
+  // Recent sessions
+  html += `<div class="section-label" style="margin-top:4px">Recent Sessions</div>`;
+  for (const w of filtered.slice(0,10)) {
+    const dist = w.distance_m>0?(isSwim?Math.round(w.distance_m)+' m':(w.distance_m/1609.34).toFixed(1)+' mi'):'';
+    const dur = w.duration_s>0?Math.round(w.duration_s/60)+' min':'';
+    const pace = isRun&&w.distance_m>0&&w.duration_s>0
+      ? (()=>{const spm=w.duration_s/(w.distance_m/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '';
+    const swimPace = isSwim&&w.distance_m>0&&w.duration_s>0
+      ? (()=>{const spm=w.duration_s/(w.distance_m/100);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/100m';})() : '';
+    const meta = isRun?[dist,pace].filter(Boolean).join(' · '):isSwim?[dist,swimPace||dur].filter(Boolean).join(' · '):[dur].filter(Boolean).join('');
+    html += `<div class="history-item">
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--ink)">${w.name||w.sport_type}</div>
+        <div class="history-date">${fmtDate(w.date)}</div>
+      </div>
+      <div class="history-value" style="color:${chartColor}">${meta}</div>
+    </div>`;
+  }
+
+  document.getElementById('sport-detail-content').innerHTML = html;
+  setTimeout(()=>barChart('sport-bar-chart', chartData, chartColor, v=>v+(isLift?' sessions':' '+chartUnit)), 50);
 }
 
 function closeModal() {
