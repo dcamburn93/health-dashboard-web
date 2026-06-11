@@ -11,31 +11,25 @@
   --bg: #141210; --card: #1c1916; --card2: #221f1b; --card3: #2a2520;
   --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.1);
   --text: #f0ebe3; --muted: #7a7168; --muted2: #4a4540;
-  --run: #d4845a; --swim: #6ab3a8; --lift: #a8c47a;
+  --run: #d4845a; --swim: #6ab3a8; --lift: #a8c47a; --bike: #a882c8;
   --sleep: #8b7ec8; --hr: #c87e8b; --steps: #c4a85a; --garmin: #5ab8d4;
   --serif: 'DM Serif Display', serif; --sans: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.5; min-height: 100vh; overscroll-behavior: none; }
-
-/* HEADER */
 .header { padding: 2rem 1.25rem 1rem; display: flex; justify-content: space-between; align-items: flex-start; }
 .header-date { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
 .header-title { font-family: var(--serif); font-size: 42px; line-height: 1; letter-spacing: -1px; }
 .sync-btn { background: none; border: 1px solid var(--border2); border-radius: 20px; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; padding: 5px 12px; cursor: pointer; }
 .sync-btn.syncing { color: var(--swim); border-color: var(--swim); }
 .last-sync { font-family: var(--mono); font-size: 9px; color: var(--muted2); margin-top: 6px; text-align: right; }
-
-/* CARDS */
 .cards { padding: 0 1rem 6rem; display: flex; flex-direction: column; gap: 10px; max-width: 480px; margin: 0 auto; }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; cursor: pointer; transition: border-color 0.2s, transform 0.1s; active: transform 0.1s; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; cursor: pointer; transition: border-color 0.2s, transform 0.1s; }
 .card:active { transform: scale(0.98); }
 .card.tappable:hover { border-color: var(--border2); }
 .card-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
 .card-source { font-size: 9px; color: var(--muted2); }
 .card-chevron { font-size: 12px; color: var(--muted2); transition: transform 0.2s; }
-
-/* DETAIL OVERLAY */
 .overlay { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
 .overlay.open { pointer-events: all; }
 .overlay-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.3s; }
@@ -47,8 +41,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
 .detail-title { font-family: var(--serif); font-size: 24px; letter-spacing: -0.5px; }
 .detail-close { background: var(--card2); border: none; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
 .detail-body { padding: 1.25rem; }
-
-/* DETAIL SECTIONS */
 .detail-section { margin-bottom: 1.5rem; }
 .detail-section-title { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.75rem; }
 .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
@@ -80,8 +72,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
 .workout-item-name { font-size: 13px; font-weight: 500; flex: 1; }
 .workout-item-stats { display: flex; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--muted); padding-left: 2px; }
 .pr-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--run); margin-left: 4px; vertical-align: middle; }
-
-/* SUMMARY CARDS (main view) */
 .sleep-big { font-family: var(--serif); font-size: 56px; line-height: 1; }
 .sleep-dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--sleep); display: inline-block; margin-left: 6px; vertical-align: middle; }
 .stage-bar { display: flex; gap: 3px; margin: 10px 0 6px; height: 4px; border-radius: 2px; overflow: hidden; }
@@ -140,7 +130,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
   <div class="loading">LOADING YOUR DATA</div>
 </div>
 
-<!-- DETAIL OVERLAY -->
 <div class="overlay" id="overlay" onclick="closeDetail(event)">
   <div class="overlay-backdrop"></div>
   <div class="detail-panel" id="detail-panel">
@@ -157,7 +146,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
 const SUPABASE_URL = 'https://csylhxbnpqsfwicqrsex.supabase.co';
 const ANON_KEY = 'sb_publishable_sWgNLaMZQba18okU49M--A_eIYijz2v';
 
-// Global data store
 let DATA = {};
 let detailCharts = [];
 
@@ -170,7 +158,11 @@ async function query(table, params='') {
 }
 
 // ── FORMATTERS ────────────────────────────────────────────────
-const fmtDate = d => { const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], months=['January','February','March','April','May','June','July','August','September','October','November','December']; return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`; };
+const fmtDate = d => {
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+        months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+};
 const toMi = m => m ? (m/1609.34).toFixed(1) : '—';
 const toPace = (s,m) => { if(!s||!m||m<100) return '—'; const mpm=(s/60)/(m/1609.34); return `${Math.floor(mpm)}:${String(Math.round((mpm%1)*60)).padStart(2,'0')}`; };
 const toTime = s => { if(!s) return '—'; const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return h>0?`${h}h ${m}m`:`${m}m`; };
@@ -179,97 +171,197 @@ const sportClass = t => { if(!t) return 'ws-lift'; t=t.toLowerCase(); if(t.inclu
 const sportLabel = t => { if(!t) return 'LIFT'; return t.replace('WeightTraining','LIFT').replace('Run','RUN').replace('Swim','SWIM').replace('Ride','RIDE').replace('Walk','WALK').toUpperCase().slice(0,4); };
 const shortDate = d => { const dt = new Date(d+'T12:00:00'); return ['Su','Mo','Tu','We','Th','Fr','Sa'][dt.getDay()]+' '+dt.getDate(); };
 
-// ── WORKOUT PLAN ─────────────────────────────────────────────
-// Phase 1, Week 3, Mon=Upper A, Wed=Lower A, Fri=Full Body
-// Tue/Thu = run+swim, Sat = long run + optional swim, Sun = rest
+// ── DYNAMIC PLAN ENGINE ───────────────────────────────────────
+// Program start: May 24, 2026. New structure starts Week 4 (Jun 14).
+// Phases: Foundation W1-4 (May 24–Jun 20), Build W5-8 (Jun 21–Jul 18), Peak W9-12 (Jul 19–Aug 15)
+// Deload weeks: 4, 8, 12
 
-const PLAN = {
-  phase: 1, week: 3,
-  // phase start date — adjust if needed
-  phaseStart: '2026-06-02',
+const PROGRAM_START = new Date('2026-05-24T00:00:00');
 
-  sessions: {
-    1: { // Monday
-      type: 'lift', label: 'Upper A', color: '#a8c47a', source: 'Phase 1 · Wk 3',
-      note: 'RPE 6–7 · ~45 min',
-      exercises: [
-        { name: 'Barbell bench press', sets: '3×10', weights: '135 / 135 / 135', note: 'Hold — consolidate before Ph.2' },
-        { name: 'Barbell row',         sets: '3×10', weights: '95 / 95 / 95',    note: 'Settled at top end' },
-        { name: 'Incline DB press',    sets: '3×12', weights: '90 / 90 / 90',    note: 'Hold — 12 reps clean' },
-        { name: 'Seated cable row',    sets: '3×12', weights: '115 / 115 / 115', note: '' },
-        { name: 'Lateral raises',      sets: '3×15', weights: '35 / 35 / 35',    note: 'Hold — form first' },
-        { name: 'Tricep pushdown',     sets: '3×12', weights: '95 / 95 / 95',    note: '' },
-        { name: 'Face pulls',          sets: '3×15', weights: '65 / 65 / 65',    note: 'Posture work' },
-      ],
-      cardio: { type: 'swim', label: 'Swim — easy aerobic', detail: '1,500–1,800m · 4×300 or 3×400 · ~1:15–1:20/100m' }
-    },
-    2: { // Tuesday
-      type: 'run+swim', label: 'Zone 2 Run + Swim', color: '#d4845a', source: 'Phase 1 · Wk 3',
-      note: 'All aerobic — RPE 6',
-      sessions: [
-        { type: 'run',  label: 'Zone 2 easy run',   detail: '30–35 min · HR 125–140 bpm · ~9:00–9:45/mi · cadence 170+ spm' },
-        { type: 'swim', label: 'Easy aerobic swim',  detail: '1,500–1,800m · 2×800m or 4×300 · 60s rest · very easy pace' },
-      ]
-    },
-    3: { // Wednesday
-      type: 'lift', label: 'Lower A', color: '#a8c47a', source: 'Phase 1 · Wk 3',
-      note: 'RPE 6–7 · ~45 min',
-      exercises: [
-        { name: 'Back squat',           sets: '3×10', weights: '45 / 95 / 95',    note: 'Deloaded — ease back in if back feels good' },
-        { name: 'Romanian deadlift',    sets: '3×10', weights: '95 / 135 / 135',  note: 'Strong progression — keep it going' },
-        { name: 'Leg press',            sets: '3×12', weights: '180 / 270 / 270', note: 'Lock in the top end' },
-        { name: 'Lying leg curl',       sets: '3×12', weights: 'N/A',             note: 'Skipped last week — reintroduce light if back allows' },
-        { name: 'Standing calf raise',  sets: '4×15', weights: 'N/A',             note: 'Skipped last week — reintroduce' },
-      ]
-    },
-    4: { // Thursday
-      type: 'run+swim', label: 'Zone 2 Run + Swim', color: '#d4845a', source: 'Phase 1 · Wk 3',
-      note: 'All aerobic — RPE 6',
-      sessions: [
-        { type: 'swim', label: 'Easy aerobic swim',  detail: '1,500–1,800m · same easy aerobic format as Tue' },
-        { type: 'run',  label: 'Zone 2 easy run',    detail: '30–35 min · HR 125–140 bpm · truly easy after swim' },
-      ]
-    },
-    5: { // Friday
-      type: 'lift', label: 'Full Body', color: '#a8c47a', source: 'Phase 1 · Wk 3',
-      note: 'RPE 6 · ~40 min · moderate load',
-      exercises: [
-        { name: 'Goblet squat',              sets: '3×10', weights: '35 / 35 / 35',    note: 'Or 95 lb back squat if feeling good' },
-        { name: 'DB bench press',            sets: '3×10', weights: '100 / 100 / 105', note: '' },
-        { name: 'Romanian deadlift',         sets: '3×10', weights: '125 / 125 / 125', note: 'Lighter than Lower A' },
-        { name: 'DB row (one arm)',          sets: '3×10', weights: '60 / 60 / 60',    note: 'per side' },
-        { name: 'Barbell hip thrust',        sets: '3×12', weights: '95 / 95 / 95',    note: 'Return to bar, no band needed' },
-        { name: 'Standing BB shoulder press',sets: '3×12', weights: '65 / 70 / 70',    note: '' },
-      ]
-    },
-    6: { // Saturday
-      type: 'run+swim', label: 'Long Run + Optional Swim', color: '#d4845a', source: 'Phase 1 · Wk 3',
-      note: 'Easy effort only',
-      sessions: [
-        { type: 'run',  label: 'Long easy run',     detail: '40–45 min · HR 125–140 bpm · same Z2 effort · this is your longest run of the week' },
-        { type: 'swim', label: 'Optional easy swim', detail: '1,000–1,200m · recovery pace · skip if fatigued' },
-      ]
-    },
-    0: { // Sunday
-      type: 'rest', label: 'Rest', color: '#4a4540', source: 'Phase 1 · Wk 3',
-      note: 'Full rest or easy walk',
-    }
-  }
-};
-
-function getTodaySession() {
-  const dow = new Date().getDay(); // 0=Sun, 1=Mon...
-  return PLAN.sessions[dow] || PLAN.sessions[0];
+function getProgramContext() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const daysSinceStart = Math.floor((today - PROGRAM_START) / (24*60*60*1000));
+  const weekNum = Math.min(12, Math.max(1, Math.floor(daysSinceStart / 7) + 1));
+  const phase = weekNum <= 4 ? 1 : weekNum <= 8 ? 2 : 3;
+  const phaseName = phase === 1 ? 'Foundation' : phase === 2 ? 'Build' : 'Peak';
+  const isDeload = weekNum === 4 || weekNum === 8 || weekNum === 12;
+  const useNewStructure = weekNum >= 4; // New M/W/F lift+bike, Tu/Th swim+run structure
+  return { weekNum, phase, phaseName, isDeload, useNewStructure };
 }
 
+function getBikeDetail(ctx) {
+  if (ctx.isDeload) return 'Easy 20–25 min spin · Zone 1–2 · flush legs after lifting';
+  if (ctx.phase === 1) return 'Zone 2 · 25–30 min · conversational pace';
+  if (ctx.phase === 2) {
+    if (ctx.weekNum <= 6) return 'Zone 2 + 2×8 min tempo · 30–35 min total';
+    return '3×10 min threshold · Zone 3–4 · 35 min total';
+  }
+  return '4–5×8 min sweet spot (88–93% FTP) · 35–45 min total';
+}
+
+function getLiftLabel(dow, ctx) {
+  // Mon = Upper A, Wed = Lower A, Fri = Upper B
+  if (ctx.phase === 1 && ctx.weekNum < 4) {
+    // Old structure: Mon=Upper A, Wed=Lower A, Fri=Full Body
+    if (dow === 1) return 'Upper A';
+    if (dow === 3) return 'Lower A';
+    if (dow === 5) return 'Full Body';
+  }
+  if (dow === 1) return 'Upper A';
+  if (dow === 3) return 'Lower A';
+  if (dow === 5) return 'Upper B';
+  return 'Lift';
+}
+
+function getSwimDetail(isThursday, ctx) {
+  if (ctx.isDeload) return isThursday ? 'Drill focus · 1,400m · easy recovery' : 'Easy aerobic · 1,400m · free swim';
+  if (ctx.phase === 1) return isThursday ? 'Easy aerobic · 1,500–1,800m · same format as Tue' : 'Zone 2 · 1,800–2,200m · 4×300 or 3×400 · ~1:15–1:20/100m';
+  if (ctx.phase === 2) return isThursday ? 'Threshold · 2,200–2,600m · 3×400 at CSS–5s' : 'Endurance · 2,400–2,800m · 4–6×200m at CSS+5s';
+  return isThursday ? 'Race-pace · 2,800–3,200m · 2×(400+300+200+100)' : 'Speed · 3,000–3,400m · 6–8×100m fast + 4×200m CSS';
+}
+
+function getRunDetail(isThursday, ctx) {
+  if (ctx.isDeload) return 'Easy jog · 25 min · Zone 1–2 only';
+  if (ctx.phase === 1) return isThursday ? 'Easy run after swim · 30–35 min · HR 125–140' : 'Zone 2 easy run · 30–35 min · HR 125–140 bpm';
+  if (ctx.phase === 2) return isThursday ? 'Tempo run · 35–42 min · 10 easy + 15–20 min Zone 3–4 + CD' : 'Easy run · 38–42 min · Zone 2';
+  return isThursday ? 'Intervals · 40–45 min · 10 WU + 5–6×1km @ 5k effort + CD' : 'Easy run · 42–48 min · Zone 2';
+}
+
+function getSaturdaySession(ctx) {
+  return {
+    type: 'open',
+    label: 'Open Session',
+    source: `Phase ${ctx.phase} · Wk ${ctx.weekNum}`,
+    note: ctx.isDeload ? 'Keep easy — Zone 1–2 max · 30 min cap' : 'Your call — run, swim, or both',
+    detail: ctx.isDeload
+      ? 'Easy swim or short easy run. Keep it genuinely light.'
+      : ctx.phase === 3
+        ? 'Great slot for a longer easy run (60+ min) or easy brick. Match effort to weekly fatigue.'
+        : 'Run, swim, or both. Match to how your legs feel after the week.',
+  };
+}
+
+function getTodaySession() {
+  const ctx = getProgramContext();
+  const dow = new Date().getDay(); // 0=Sun ... 6=Sat
+
+  // Pre-Week 4: old structure
+  if (!ctx.useNewStructure) {
+    return getLegacySession(dow, ctx);
+  }
+
+  // Week 4+ new structure
+  if (dow === 0) { // Sunday — Rest
+    return { type: 'rest', label: 'Rest', source: `Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note: 'Full rest or easy walk' };
+  }
+
+  if (dow === 1 || dow === 3 || dow === 5) { // Mon / Wed / Fri — Lift + Bike
+    const liftLabel = getLiftLabel(dow, ctx);
+    const bikeDetail = getBikeDetail(ctx);
+    const liftNote = ctx.isDeload ? 'Deload — 60% load, same movements' : `RPE ${ctx.phase === 3 ? '8–9' : ctx.phase === 2 ? '7–8' : '6–7'} · ~45 min`;
+    return {
+      type: 'lift+bike',
+      label: `${liftLabel} + Bike`,
+      liftLabel,
+      bikeDetail,
+      source: `Phase ${ctx.phase} · Wk ${ctx.weekNum}${ctx.isDeload ? ' · Deload' : ''}`,
+      note: liftNote,
+      exercises: getLiftExercises(liftLabel, ctx),
+    };
+  }
+
+  if (dow === 2 || dow === 4) { // Tue / Thu — Swim + Run
+    const isThu = dow === 4;
+    const swimDetail = getSwimDetail(isThu, ctx);
+    const runDetail = getRunDetail(isThu, ctx);
+    return {
+      type: 'swim+run',
+      label: isThu ? 'Swim + Run' : 'Swim + Run',
+      source: `Phase ${ctx.phase} · Wk ${ctx.weekNum}${ctx.isDeload ? ' · Deload' : ''}`,
+      note: ctx.isDeload ? 'Easy effort only — aerobic flush' : `Phase ${ctx.phase} aerobic ${isThu ? '· intensity day' : '· base day'}`,
+      sessions: [
+        { type: 'swim', label: isThu ? 'Threshold swim' : 'Endurance swim', detail: swimDetail },
+        { type: 'run', label: isThu ? 'Tempo/interval run' : 'Easy run', detail: runDetail },
+      ]
+    };
+  }
+
+  if (dow === 6) { // Saturday — Open
+    return getSaturdaySession(ctx);
+  }
+
+  return { type: 'rest', label: 'Rest', source: `Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note: 'Full rest' };
+}
+
+function getLiftExercises(label, ctx) {
+  // Returns exercise list based on lift label and phase
+  const ph = ctx.phase;
+  const isDeload = ctx.isDeload;
+  const sets = isDeload ? '3×6' : ph === 3 ? '5×3–5' : ph === 2 ? '4×4–6' : '3×8–10';
+
+  if (label === 'Upper A') return [
+    { name: 'Bench Press', sets: isDeload?'3×6':'4×4–6', weights: '—', note: isDeload?'60% 1RM':'Primary · RPE 8+' },
+    { name: 'Barbell Row', sets: isDeload?'3×6':'4×4–6', weights: '—', note: 'Pair with bench' },
+    { name: 'Strict OHP', sets: '3×6–8', weights: '—', note: 'No leg drive' },
+    { name: 'Weighted Pull-ups', sets: '3×5–7', weights: '—', note: 'BW if needed' },
+    { name: 'Face Pulls', sets: '3×15', weights: '—', note: 'Every upper day' },
+    { name: 'Tricep Dips / Pushdown', sets: '3×10', weights: '—', note: '' },
+  ];
+  if (label === 'Upper B') return [
+    { name: 'Incline DB Press', sets: '4×8–10', weights: '—', note: 'Moderate load' },
+    { name: 'Single-Arm Cable Row', sets: '4×10–12', weights: '—', note: 'Full stretch' },
+    { name: 'Lateral Raises', sets: '4×12–15', weights: '—', note: 'Light · continuous tension' },
+    { name: 'Chest-Supported Row', sets: '3×12', weights: '—', note: 'No spinal load' },
+    { name: 'Hammer Curls', sets: '3×12', weights: '—', note: '' },
+    { name: 'Cable Tricep OH Ext.', sets: '3×12', weights: '—', note: 'Long-head stretch' },
+  ];
+  if (label === 'Lower A') return [
+    { name: 'Back Squat', sets: isDeload?'3×6':'4×4–6', weights: '—', note: isDeload?'60% 1RM':'Primary · RPE 8+' },
+    { name: 'Romanian Deadlift', sets: '3×8', weights: '—', note: 'Hamstring load' },
+    { name: 'Leg Press', sets: '3×10–12', weights: '—', note: '' },
+    { name: 'Nordic Hamstring Curl', sets: '3×5–8', weights: '—', note: 'Injury prevention' },
+    { name: 'Single-Leg Calf Raise', sets: '3×15/leg', weights: '—', note: 'Add DB when BW is easy' },
+    { name: 'Copenhagen Plank', sets: '3×25s/side', weights: '—', note: 'Adductor + core' },
+  ];
+  if (label === 'Full Body') return [
+    { name: 'Goblet Squat', sets: '3×10', weights: '—', note: '' },
+    { name: 'DB Bench Press', sets: '3×10', weights: '—', note: '' },
+    { name: 'Romanian Deadlift', sets: '3×10', weights: '—', note: 'Lighter than Lower A' },
+    { name: 'DB Row (one arm)', sets: '3×10', weights: '—', note: 'per side' },
+    { name: 'BB Hip Thrust', sets: '3×12', weights: '—', note: '' },
+    { name: 'Standing OHP', sets: '3×12', weights: '—', note: '' },
+  ];
+  return [];
+}
+
+function getLegacySession(dow, ctx) {
+  // Weeks 1–3 original structure
+  const sessions = {
+    1: { type:'lift', label:'Upper A', source:`Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note:'RPE 6–7 · ~45 min', exercises: getLiftExercises('Upper A', ctx),
+      cardio: { type:'swim', label:'Swim — easy aerobic', detail:'1,500–1,800m · 4×300 or 3×400 · ~1:15–1:20/100m' }},
+    2: { type:'run+swim', label:'Zone 2 Run + Swim', source:`Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note:'All aerobic — RPE 6',
+      sessions:[{ type:'run', label:'Zone 2 easy run', detail:'30–35 min · HR 125–140 bpm · ~9:00–9:45/mi' }, { type:'swim', label:'Easy aerobic swim', detail:'1,500–1,800m · 2×800m or 4×300 · 60s rest' }]},
+    3: { type:'lift', label:'Lower A', source:`Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note:'RPE 6–7 · ~45 min', exercises: getLiftExercises('Lower A', ctx) },
+    4: { type:'run+swim', label:'Zone 2 Run + Swim', source:`Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note:'All aerobic — RPE 6',
+      sessions:[{ type:'swim', label:'Easy aerobic swim', detail:'1,500–1,800m · same easy aerobic format as Tue' }, { type:'run', label:'Zone 2 easy run', detail:'30–35 min · HR 125–140 bpm · truly easy after swim' }]},
+    5: { type:'lift', label:'Full Body', source:`Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note:'RPE 6 · ~40 min', exercises: getLiftExercises('Full Body', ctx) },
+    6: { type:'open', label:'Open Session', source:`Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note:'Easy effort only', detail:'Run, swim, or both — keep easy' },
+    0: { type:'rest', label:'Rest', source:`Phase ${ctx.phase} · Wk ${ctx.weekNum}`, note:'Full rest or easy walk' },
+  };
+  return sessions[dow] || sessions[0];
+}
+
+// ── BUILD WORKOUT CARD ────────────────────────────────────────
 function buildTodayWorkoutCard() {
   const s = getTodaySession();
-  const dow = new Date().getDay();
-  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const ctx = getProgramContext();
+  const label = `Phase ${ctx.phase} · Wk ${ctx.weekNum}${ctx.isDeload ? ' · Deload' : ''}`;
 
   if (s.type === 'rest') {
     return `<div class="card tappable" onclick="openDetail('workout')">
-      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Phase 1 · Wk 3</span><span class="card-chevron">›</span></span></div>
+      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${label}</span><span class="card-chevron">›</span></span></div>
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:36px;height:36px;border-radius:50%;background:rgba(74,69,64,0.3);display:flex;align-items:center;justify-content:center;font-size:18px">😴</div>
         <div><div style="font-family:var(--serif);font-size:20px">Rest day</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div></div>
@@ -277,8 +369,70 @@ function buildTodayWorkoutCard() {
     </div>`;
   }
 
+  if (s.type === 'open') {
+    return `<div class="card tappable" onclick="openDetail('workout')">
+      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${s.source}</span><span class="card-chevron">›</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(16,185,129,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">🎯</div>
+        <div>
+          <div style="font-family:var(--serif);font-size:22px;color:#10b981">${s.label}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);padding:8px 10px;background:rgba(16,185,129,0.06);border-radius:8px;border-left:2px solid #10b981">${s.detail}</div>
+    </div>`;
+  }
+
+  if (s.type === 'lift+bike') {
+    const topExercises = (s.exercises || []).slice(0, 3);
+    return `<div class="card tappable" onclick="openDetail('workout')">
+      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${s.source}</span><span class="card-chevron">›</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(168,196,122,0.15);display:flex;align-items:center;justify-content:center;font-size:18px">🏋️</div>
+        <div>
+          <div style="font-family:var(--serif);font-size:22px;color:var(--lift)">${s.liftLabel}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div>
+        </div>
+      </div>
+      ${topExercises.map(e=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:13px">${e.name}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${e.sets}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--lift);text-align:right">${e.note||'—'}</div>
+        </div>`).join('')}
+      ${s.exercises.length > 3 ? `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px">+ ${s.exercises.length - 3} more exercises · tap for full workout</div>` : ''}
+      <div style="margin-top:10px;padding:8px 10px;background:rgba(168,130,200,0.08);border-radius:8px;border-left:2px solid var(--bike)">
+        <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--bike);margin-bottom:2px">🚴 After lifting</div>
+        <div style="font-size:12px">${s.bikeDetail}</div>
+      </div>
+    </div>`;
+  }
+
+  if (s.type === 'swim+run' || s.type === 'run+swim') {
+    return `<div class="card tappable" onclick="openDetail('workout')">
+      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${s.source}</span><span class="card-chevron">›</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(106,179,168,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">🏊</div>
+        <div>
+          <div style="font-family:var(--serif);font-size:22px;color:var(--swim)">${s.label}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div>
+        </div>
+      </div>
+      ${(s.sessions||[]).map((sess,i)=>`
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${i<(s.sessions.length-1)?'border-bottom:1px solid var(--border)':''}">
+          <div style="width:28px;height:28px;border-radius:6px;background:${sess.type==='run'?'rgba(212,132,90,0.15)':'rgba(106,179,168,0.15)'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${sess.type==='run'?'🏃':'🏊'}</div>
+          <div>
+            <div style="font-size:13px;font-weight:500;color:${sess.type==='run'?'var(--run)':'var(--swim)'}">${sess.label}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${sess.detail}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
   if (s.type === 'lift') {
-    const topExercises = s.exercises.slice(0, 3);
+    const topExercises = (s.exercises || []).slice(0, 3);
     return `<div class="card tappable" onclick="openDetail('workout')">
       <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${s.source}</span><span class="card-chevron">›</span></span></div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -289,14 +443,14 @@ function buildTodayWorkoutCard() {
         </div>
       </div>
       ${topExercises.map(e=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:13px">${e.name}</div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${e.sets}</div>
-        </div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--lift);text-align:right">${e.weights}</div>
-      </div>`).join('')}
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px">+ ${s.exercises.length - 3} more exercises · tap for full workout</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:13px">${e.name}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${e.sets}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--lift);text-align:right">${e.weights||e.note||'—'}</div>
+        </div>`).join('')}
+      ${s.exercises && s.exercises.length > 3 ? `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px">+ ${s.exercises.length - 3} more exercises · tap for full workout</div>` : ''}
       ${s.cardio?`<div style="margin-top:10px;padding:8px 10px;background:rgba(106,179,168,0.08);border-radius:8px;border-left:2px solid var(--swim)">
         <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--swim);margin-bottom:2px">Also today</div>
         <div style="font-size:12px">${s.cardio.label}</div>
@@ -305,32 +459,97 @@ function buildTodayWorkoutCard() {
     </div>`;
   }
 
-  if (s.type === 'run+swim') {
-    return `<div class="card tappable" onclick="openDetail('workout')">
-      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${s.source}</span><span class="card-chevron">›</span></span></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,132,90,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">🏃</div>
-        <div>
-          <div style="font-family:var(--serif);font-size:22px;color:var(--run)">${s.label}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div>
-        </div>
-      </div>
-      ${s.sessions.map((sess,i)=>`
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${i<s.sessions.length-1?'border-bottom:1px solid var(--border)':''}">
-        <div style="width:28px;height:28px;border-radius:6px;background:${sess.type==='run'?'rgba(212,132,90,0.15)':'rgba(106,179,168,0.15)'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${sess.type==='run'?'🏃':'🏊'}</div>
-        <div>
-          <div style="font-size:13px;font-weight:500;color:${sess.type==='run'?'var(--run)':'var(--swim)'}">${sess.label}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${sess.detail}</div>
-        </div>
-      </div>`).join('')}
+  return '';
+}
+
+// ── WORKOUT DETAIL ────────────────────────────────────────────
+function buildWorkoutDetail() {
+  const s = getTodaySession();
+  const ctx = getProgramContext();
+
+  if (s.type === 'rest') {
+    return `<div class="detail-section">
+      <div class="detail-section-title">Rest day protocol</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6">Full rest or easy 20–30 min walk. No structured training. Focus on sleep, hydration, and hitting your protein target (180–190g).</p>
     </div>`;
   }
-  return '';
+
+  if (s.type === 'open') {
+    return `<div class="detail-section">
+      <div class="detail-section-title">Saturday open session</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px">${s.detail}</p>
+      <div class="stat-row"><span class="stat-key">If legs feel good</span><span class="stat-val" style="color:var(--run)">Long easy run 50–70 min</span></div>
+      <div class="stat-row"><span class="stat-key">If legs are cooked</span><span class="stat-val" style="color:var(--swim)">Easy swim 1,200–1,500m</span></div>
+      <div class="stat-row"><span class="stat-key">Feeling great</span><span class="stat-val" style="color:var(--lift)">Easy brick (short bike + run)</span></div>
+      <div class="stat-row"><span class="stat-key">Deload / tired</span><span class="stat-val" style="color:var(--muted)">30 min max · Zone 1–2 only</span></div>
+    </div>`;
+  }
+
+  let html = '';
+
+  if (s.type === 'lift+bike') {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">${s.liftLabel} — full exercise list</div>
+      ${(s.exercises||[]).map(e=>`
+        <div class="workout-item">
+          <div class="workout-item-header">
+            <span class="workout-badge" style="background:rgba(168,196,122,0.15);color:var(--lift)">LIFT</span>
+            <span class="workout-item-name">${e.name}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${e.sets}</span>
+          </div>
+          ${e.note?`<div class="workout-item-stats"><span>${e.note}</span></div>`:''}
+        </div>`).join('')}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">🚴 Post-lift bike session</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px">${s.bikeDetail}</p>
+      <div class="stat-row"><span class="stat-key">Order</span><span class="stat-val">Lift first, then bike</span></div>
+      <div class="stat-row"><span class="stat-key">If legs are destroyed</span><span class="stat-val">Pure Zone 1 spin only</span></div>
+      <div class="stat-row"><span class="stat-key">Indoor vs outdoor</span><span class="stat-val">Either works</span></div>
+    </div>`;
+  }
+
+  if (s.type === 'swim+run' || s.type === 'run+swim') {
+    (s.sessions||[]).forEach(sess => {
+      const color = sess.type === 'run' ? 'var(--run)' : 'var(--swim)';
+      const icon = sess.type === 'run' ? '🏃' : '🏊';
+      html += `<div class="detail-section">
+        <div class="detail-section-title">${icon} ${sess.label}</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">${sess.detail}</p>
+      </div>`;
+    });
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Session notes</div>
+      <div class="stat-row"><span class="stat-key">Order</span><span class="stat-val">Swim first, then run</span></div>
+      <div class="stat-row"><span class="stat-key">Intensity</span><span class="stat-val">${ctx.isDeload ? 'Easy only' : 'See above'}</span></div>
+      <div class="stat-row"><span class="stat-key">Protein target</span><span class="stat-val">180–190g today</span></div>
+    </div>`;
+  }
+
+  if (s.type === 'lift') {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">${s.label} — full exercise list</div>
+      ${(s.exercises||[]).map(e=>`
+        <div class="workout-item">
+          <div class="workout-item-header">
+            <span class="workout-badge" style="background:rgba(168,196,122,0.15);color:var(--lift)">LIFT</span>
+            <span class="workout-item-name">${e.name}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${e.sets}</span>
+          </div>
+          ${e.note?`<div class="workout-item-stats"><span>${e.note}</span></div>`:''}
+        </div>`).join('')}
+    </div>
+    ${s.cardio?`<div class="detail-section">
+      <div class="detail-section-title">🏊 Also today — ${s.cardio.label}</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6">${s.cardio.detail}</p>
+    </div>`:''}`;
+  }
+
+  return html || '<p style="color:var(--muted);font-size:13px">No session details available.</p>';
 }
 
 // ── HEATMAP ───────────────────────────────────────────────────
 function buildHeatmap(yearW, expanded) {
-  // Build a map of date -> [sport_types]
   const dayMap = {};
   for (const w of yearW) {
     if (!dayMap[w.date]) dayMap[w.date] = [];
@@ -339,12 +558,11 @@ function buildHeatmap(yearW, expanded) {
 
   function cellColor(types) {
     if (!types || types.length === 0) return '#1e1c18';
-    // Priority: race > ride > run > swim > lift > walk
     if (types.some(t=>t.includes('run')&&!t.includes('weight'))) {
       const hasSwim = types.some(t=>t.includes('swim'));
       const hasLift = types.some(t=>t.includes('weight')||t.includes('strength'));
-      if (hasSwim && hasLift) return '#e8c060'; // triple day
-      if (hasSwim || hasLift) return '#d4845a'; // double day
+      if (hasSwim && hasLift) return '#e8c060';
+      if (hasSwim || hasLift) return '#d4845a';
       return '#d4845a';
     }
     if (types.some(t=>t.includes('swim'))) return '#6ab3a8';
@@ -354,25 +572,13 @@ function buildHeatmap(yearW, expanded) {
     return '#3a3530';
   }
 
-  function cellOpacity(types) {
-    if (!types || types.length === 0) return 0.3;
-    return 1;
-  }
-
-  // Generate all days of 2026
   const start = new Date('2026-01-01');
   const today = new Date();
   const cells = [];
   const d = new Date(start);
-
-  // Pad to start on Sunday
   const startDow = start.getDay();
   for (let i = 0; i < startDow; i++) cells.push(null);
-
-  while (d <= today) {
-    cells.push(d.toISOString().slice(0, 10));
-    d.setDate(d.getDate() + 1);
-  }
+  while (d <= today) { cells.push(d.toISOString().slice(0, 10)); d.setDate(d.getDate() + 1); }
 
   const cellSize = expanded ? 12 : 9;
   const gap = expanded ? 2 : 1.5;
@@ -381,7 +587,6 @@ function buildHeatmap(yearW, expanded) {
   const height = 7 * (cellSize + gap);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Month labels
   const monthLabels = [];
   let lastMonth = -1;
   for (let i = 0; i < cells.length; i++) {
@@ -395,7 +600,6 @@ function buildHeatmap(yearW, expanded) {
   }
 
   let svg = `<svg viewBox="0 0 ${width} ${height + (expanded?16:0)}" width="100%" style="overflow:visible">`;
-
   if (expanded) {
     for (const { month, x } of monthLabels) {
       svg += `<text x="${x}" y="10" fill="#4a4540" font-size="8" font-family="'DM Mono',monospace">${month}</text>`;
@@ -409,21 +613,12 @@ function buildHeatmap(yearW, expanded) {
     const row = i % 7;
     const x = col * (cellSize + gap);
     const y = row * (cellSize + gap);
-
-    if (!date) {
-      svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="#1e1c18"/>`;
-      continue;
-    }
-
+    if (!date) { svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="#1e1c18"/>`; continue; }
     const types = dayMap[date];
     const color = cellColor(types);
-    const opacity = cellOpacity(types);
+    const opacity = (!types || types.length === 0) ? 0.3 : 1;
     const isToday = date === today.toISOString().slice(0,10);
-    const title = types?.length ? `${date}: ${types.join(', ')}` : date;
-
-    svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" opacity="${opacity}"${isToday?' stroke="#f0ebe3" stroke-width="1"':''}>
-      <title>${title}</title>
-    </rect>`;
+    svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" opacity="${opacity}"${isToday?' stroke="#f0ebe3" stroke-width="1"':''}><title>${date}${types?.length?' · '+types.join(', '):''}</title></rect>`;
   }
 
   if (expanded) svg += `</g>`;
@@ -435,6 +630,7 @@ function buildHeatmap(yearW, expanded) {
 async function loadAll() {
   const btn = document.getElementById('sync-btn');
   btn.textContent = '↻ Syncing...'; btn.classList.add('syncing');
+  // Always set the date header immediately
   document.getElementById('header-date').textContent = fmtDate(new Date());
 
   const d7 = new Date(); d7.setDate(d7.getDate()-7);
@@ -458,678 +654,336 @@ async function loadAll() {
 
     DATA = { sleep, hr, activity, body, recentW, weekW, garmin, sleep90, hr90, activity90, yearW };
 
-    const weekRun  = weekW.filter(w=>w.sport_type?.toLowerCase().includes('run')).reduce((a,b)=>a+(b.distance_m||0),0);
+    const weekRun = weekW.filter(w=>w.sport_type?.toLowerCase().includes('run')).reduce((a,b)=>a+(b.distance_m||0),0);
     const weekSwim = weekW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).reduce((a,b)=>a+(b.distance_m||0),0);
     const weekLift = weekW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
-    const hrvVals  = hr.filter(h=>h.hrv_ms&&!isNaN(h.hrv_ms));
-    const avgHRV   = hrvVals.length ? Math.round(hrvVals.reduce((a,b)=>a+b.hrv_ms,0)/hrvVals.length) : '—';
+
+    const hrvVals = hr.filter(h=>h.hrv_ms&&!isNaN(h.hrv_ms));
+    const avgHRV = hrvVals.length ? Math.round(hrvVals.reduce((a,b)=>a+b.hrv_ms,0)/hrvVals.length) : '—';
     const avgSleep = sleep.length ? (sleep.reduce((a,b)=>a+(b.duration_h||0),0)/sleep.length).toFixed(1) : '—';
 
     const s0=sleep[0], h0=hr[0], a0=activity[0], b0=body[0], g0=garmin[0];
 
     document.getElementById('cards').innerHTML = `
 
-    <!-- SLEEP CARD -->
-    <div class="card tappable" onclick="openDetail('sleep')">
-      <div class="card-label">Sleep <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health · Garmin</span><span class="card-chevron">›</span></span></div>
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">
-        <span class="sleep-big" style="color:var(--text)">${s0?.duration_h?.toFixed(1)??'—'}</span>
-        <span style="font-size:20px;color:var(--muted)">h</span>
-        ${s0?'<span class="sleep-dot-live"></span>':''}
+<!-- SLEEP CARD -->
+<div class="card tappable" onclick="openDetail('sleep')">
+  <div class="card-label">Sleep <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health · Garmin</span><span class="card-chevron">›</span></span></div>
+  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">
+    <span class="sleep-big" style="color:var(--text)">${s0?.duration_h?.toFixed(1)??'—'}</span>
+    <span style="font-size:20px;color:var(--muted)">h</span>
+    ${s0?'<span class="sleep-dot-live"></span>':''}
+  </div>
+  <div style="font-size:12px;color:var(--muted)">7-day avg · ${avgSleep}h</div>
+  ${s0?.deep_h||s0?.rem_h?`
+  <div class="stage-bar" style="margin-top:12px">
+    <div class="stage-seg" style="flex:${s0.deep_h||0};background:#5a4fa8"></div>
+    <div class="stage-seg" style="flex:${s0.rem_h||0};background:#8b7ec8"></div>
+    <div class="stage-seg" style="flex:${s0.core_h||0};background:#c8b8f0"></div>
+    <div class="stage-seg" style="flex:${s0.awake_h||0};background:#3a3540"></div>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--muted)">
+    <span style="color:#5a4fa8">■</span> Deep ${s0.deep_h?.toFixed(1)||0}h
+    <span style="color:#8b7ec8">■</span> REM ${s0.rem_h?.toFixed(1)||0}h
+    <span style="color:#c8b8f0">■</span> Core ${s0.core_h?.toFixed(1)||0}h
+  </div>`:''}
+  <div class="sleep-dots" style="margin-top:12px">
+    ${sleep.slice(0,7).reverse().map(s=>{const h=s.duration_h||0;const c=h>=8?'#8b7ec8':h>=7?'#6a5fa8':h>=6?'#4a3f88':'#2a2040';return`<div class="sleep-day-dot" style="background:${c}" title="${s.date}: ${h}h"></div>`;}).join('')}
+  </div>
+</div>
+
+<!-- TODAY'S WORKOUT CARD -->
+${buildTodayWorkoutCard()}
+
+<!-- MOVEMENT CARD -->
+<div class="card tappable" onclick="openDetail('movement')">
+  <div class="card-label">Movement <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health</span><span class="card-chevron">›</span></span></div>
+  <div class="move-grid">
+    <div><div class="move-label">Steps</div><div class="move-val" style="color:var(--steps)">${a0?.steps?.toLocaleString()??'—'}</div></div>
+    <div><div class="move-label">Active cal</div><div class="move-val" style="color:var(--run)">${a0?.active_calories?.toLocaleString()??'—'}</div></div>
+  </div>
+  <div class="bar-row">
+    ${activity.slice(0,7).reverse().map(d=>{
+      const ms=Math.max(...activity.slice(0,7).map(x=>x.steps||0),1);
+      const mc=Math.max(...activity.slice(0,7).map(x=>x.active_calories||0),1);
+      const sh=Math.round(((d.steps||0)/ms)*44); const ch=Math.round(((d.active_calories||0)/mc)*44);
+      const dl=['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(d.date+'T12:00:00').getDay()];
+      return`<div class="bar-day"><div style="height:${Math.max(sh,ch)}px;display:flex;align-items:flex-end;gap:1px;width:100%"><div class="bar-seg" style="flex:1;height:${sh}px;background:var(--steps);opacity:.7"></div><div class="bar-seg" style="flex:1;height:${ch}px;background:var(--run);opacity:.7"></div></div><div class="bar-lbl">${dl}</div></div>`;
+    }).join('')}
+  </div>
+  ${a0?.flights_climbed?`<div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:10px">${a0.flights_climbed} flights climbed</div>`:''}
+</div>
+
+<!-- HR & HRV CARD -->
+<div class="card tappable" onclick="openDetail('heart')">
+  <div class="card-label">Heart rate & HRV <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health</span><span class="card-chevron">›</span></span></div>
+  <div class="hr-grid">
+    <div><div class="hr-label">Resting HR</div><div class="hr-val" style="color:var(--hr)">${h0?.resting_hr??'—'}<span class="hr-unit"> bpm</span></div></div>
+    <div><div class="hr-label">HRV</div><div class="hr-val" style="color:var(--sleep)">${h0?.hrv_ms?Math.round(h0.hrv_ms):(avgHRV??'—')}<span class="hr-unit"> ms</span></div></div>
+  </div>
+  <svg class="sparkline" viewBox="0 0 200 32" preserveAspectRatio="none">
+    ${(()=>{const v=hr.slice(0,14).reverse().map(h=>h.resting_hr||0).filter(x=>x>0);if(v.length<2)return'';const mn=Math.min(...v)-5,mx=Math.max(...v)+5;const pts=v.map((x,i)=>`${((i/(v.length-1))*200).toFixed(1)},${(32-((x-mn)/(mx-mn))*30).toFixed(1)}`).join(' ');return`<polyline points="${pts}" fill="none" stroke="var(--hr)" stroke-width="1.5" stroke-linejoin="round" opacity=".7"/>`;})()}
+  </svg>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">14-day resting HR trend</div>
+</div>
+
+<!-- TRAINING CARD -->
+<div class="card tappable" onclick="openDetail('training')">
+  <div class="card-label">Training <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Strava</span><span class="card-chevron">›</span></span></div>
+  <div class="train-week">
+    <div class="train-mini"><div class="train-mini-label">Run</div><div class="train-mini-val" style="color:var(--run)">${toMi(weekRun)}</div><div class="train-mini-sub">mi this week</div></div>
+    <div class="train-mini"><div class="train-mini-label">Swim</div><div class="train-mini-val" style="color:var(--swim)">${weekSwim>0?(weekSwim/1000).toFixed(1)+'k':'—'}</div><div class="train-mini-sub">meters</div></div>
+    <div class="train-mini"><div class="train-mini-label">Lifts</div><div class="train-mini-val" style="color:var(--lift)">${weekLift}</div><div class="train-mini-sub">sessions</div></div>
+  </div>
+  ${recentW.slice(0,4).map(w=>`
+  <div class="workout-row">
+    <span class="ws ${sportClass(w.sport_type)}">${sportLabel(w.sport_type)}</span>
+    <span class="workout-name">${w.name||''}${w.pr_count>0?'<span class="pr-dot"></span>':''}</span>
+    <span class="workout-stat">${w.sport_type?.toLowerCase().includes('run')?toMi(w.distance_m)+' · '+toPace(w.duration_s,w.distance_m)+'/mi':w.sport_type?.toLowerCase().includes('swim')?(w.distance_m?Math.round(w.distance_m)+'m':''):toTime(w.duration_s)}</span>
+  </div>`).join('')}
+</div>
+
+<!-- BODY CARD -->
+${b0?`
+<div class="card tappable" onclick="openDetail('body')">
+  <div class="card-label">Body <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health</span><span class="card-chevron">›</span></span></div>
+  ${b0.weight_lbs?`<div class="body-row"><span class="body-key">Weight</span><span class="body-val">${b0.weight_lbs.toFixed(1)} <span style="color:var(--muted);font-size:11px">lbs</span></span></div>`:''}
+  ${b0.body_fat_pct?`<div class="body-row"><span class="body-key">Body fat</span><span class="body-val">${b0.body_fat_pct.toFixed(1)}<span style="color:var(--muted);font-size:11px">%</span></span></div>`:''}
+  ${b0.vo2_max?`<div class="body-row"><span class="body-key">VO2 Max</span><span class="body-val">${b0.vo2_max.toFixed(1)} <span style="color:var(--muted);font-size:11px">ml/kg/min</span></span></div>`:''}
+</div>`:''}
+
+<!-- RECOVERY CARD -->
+${garmin.length?`
+<div class="card tappable" onclick="openDetail('recovery')">
+  <div class="card-label">Recovery <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Garmin</span><span class="card-chevron">›</span></span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div>
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">Body battery</div>
+      <div style="font-family:var(--serif);font-size:38px;line-height:1;color:var(--lift)">${g0?.body_battery_max??'—'}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">peak · low ${g0?.body_battery_min??'—'}</div>
+    </div>
+    <div>
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">Stress avg</div>
+      <div style="font-family:var(--serif);font-size:38px;line-height:1;color:${(g0?.stress_avg||50)<25?'var(--lift)':(g0?.stress_avg||50)<50?'var(--steps)':'var(--hr)'}">${g0?.stress_avg??'—'}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">${(g0?.stress_avg||50)<25?'low · restful':(g0?.stress_avg||50)<50?'moderate':'elevated'}</div>
+    </div>
+  </div>
+</div>`:''}
+
+<!-- YEAR IN TRAINING -->
+<div class="card tappable" onclick="openDetail('heatmap')">
+  <div class="card-label">2026 in training <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Strava</span><span class="card-chevron">›</span></span></div>
+  ${(()=>{
+    const totalRuns = yearW.filter(w=>w.sport_type?.toLowerCase().includes('run')).length;
+    const totalSwims = yearW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).length;
+    const totalLifts = yearW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
+    const totalDays = new Set(yearW.map(w=>w.date)).size;
+    const dayOfYear = Math.floor((new Date() - new Date('2026-01-01')) / 86400000) + 1;
+    const pct = Math.round((totalDays / dayOfYear) * 100);
+    return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div style="background:var(--card2);border-radius:10px;padding:12px">
+        <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Active days</div>
+        <div style="font-family:var(--serif);font-size:28px;color:var(--steps)">${totalDays}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">${pct}% of year</div>
       </div>
-      <div style="font-size:12px;color:var(--muted)">7-day avg · ${avgSleep}h</div>
-      ${s0?.deep_h||s0?.rem_h?`
-      <div class="stage-bar" style="margin-top:12px">
-        <div class="stage-seg" style="flex:${s0.deep_h||0};background:#5a4fa8"></div>
-        <div class="stage-seg" style="flex:${s0.rem_h||0};background:#8b7ec8"></div>
-        <div class="stage-seg" style="flex:${s0.core_h||0};background:#c8b8f0"></div>
-        <div class="stage-seg" style="flex:${s0.awake_h||0};background:#3a3540"></div>
+      <div style="background:var(--card2);border-radius:10px;padding:12px">
+        <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Runs</div>
+        <div style="font-family:var(--serif);font-size:28px;color:var(--run)">${totalRuns}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
       </div>
-      <div style="display:flex;gap:12px;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--muted)">
-        <span style="color:#5a4fa8">■</span> Deep ${s0.deep_h?.toFixed(1)||0}h
-        <span style="color:#8b7ec8">■</span> REM ${s0.rem_h?.toFixed(1)||0}h
-        <span style="color:#c8b8f0">■</span> Core ${s0.core_h?.toFixed(1)||0}h
-      </div>`:''}
-      <div class="sleep-dots" style="margin-top:12px">
-        ${sleep.slice(0,7).reverse().map(s=>{const h=s.duration_h||0;const c=h>=8?'#8b7ec8':h>=7?'#6a5fa8':h>=6?'#4a3f88':'#2a2040';return`<div class="sleep-day-dot" style="background:${c}" title="${s.date}: ${h}h"></div>`;}).join('')}
+      <div style="background:var(--card2);border-radius:10px;padding:12px">
+        <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Swims</div>
+        <div style="font-family:var(--serif);font-size:28px;color:var(--swim)">${totalSwims}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
+      </div>
+      <div style="background:var(--card2);border-radius:10px;padding:12px">
+        <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Lifts</div>
+        <div style="font-family:var(--serif);font-size:28px;color:var(--lift)">${totalLifts}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
       </div>
     </div>
+    ${buildHeatmap(yearW, false)}`;
+  })()}
+</div>`;
 
-    <!-- TODAY'S WORKOUT CARD -->
-    ${buildTodayWorkoutCard()}
-
-    <!-- MOVEMENT CARD -->
-    <div class="card tappable" onclick="openDetail('movement')">
-      <div class="card-label">Movement <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health</span><span class="card-chevron">›</span></span></div>
-      <div class="move-grid">
-        <div><div class="move-label">Steps</div><div class="move-val" style="color:var(--steps)">${a0?.steps?.toLocaleString()??'—'}</div></div>
-        <div><div class="move-label">Active cal</div><div class="move-val" style="color:var(--run)">${a0?.active_calories?.toLocaleString()??'—'}</div></div>
-      </div>
-      <div class="bar-row">
-        ${activity.slice(0,7).reverse().map(d=>{
-          const ms=Math.max(...activity.slice(0,7).map(x=>x.steps||0),1);
-          const mc=Math.max(...activity.slice(0,7).map(x=>x.active_calories||0),1);
-          const sh=Math.round(((d.steps||0)/ms)*44); const ch=Math.round(((d.active_calories||0)/mc)*44);
-          const dl=['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(d.date+'T12:00:00').getDay()];
-          return`<div class="bar-day"><div style="height:${Math.max(sh,ch)}px;display:flex;align-items:flex-end;gap:1px;width:100%"><div class="bar-seg" style="flex:1;height:${sh}px;background:var(--steps);opacity:.7"></div><div class="bar-seg" style="flex:1;height:${ch}px;background:var(--run);opacity:.7"></div></div><div class="bar-lbl">${dl}</div></div>`;
-        }).join('')}
-      </div>
-      ${a0?.flights_climbed?`<div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:10px">${a0.flights_climbed} flights climbed</div>`:''}
-    </div>
-
-    <!-- HR & HRV CARD -->
-    <div class="card tappable" onclick="openDetail('heart')">
-      <div class="card-label">Heart rate & HRV <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health</span><span class="card-chevron">›</span></span></div>
-      <div class="hr-grid">
-        <div><div class="hr-label">Resting HR</div><div class="hr-val" style="color:var(--hr)">${h0?.resting_hr??'—'}<span class="hr-unit"> bpm</span></div></div>
-        <div><div class="hr-label">HRV</div><div class="hr-val" style="color:var(--sleep)">${h0?.hrv_ms?Math.round(h0.hrv_ms):(avgHRV??'—')}<span class="hr-unit"> ms</span></div></div>
-      </div>
-      <svg class="sparkline" viewBox="0 0 200 32" preserveAspectRatio="none">
-        ${(()=>{const v=hr.slice(0,14).reverse().map(h=>h.resting_hr||0).filter(x=>x>0);if(v.length<2)return'';const mn=Math.min(...v)-5,mx=Math.max(...v)+5;const pts=v.map((x,i)=>`${((i/(v.length-1))*200).toFixed(1)},${(32-((x-mn)/(mx-mn))*30).toFixed(1)}`).join(' ');return`<polyline points="${pts}" fill="none" stroke="var(--hr)" stroke-width="1.5" stroke-linejoin="round" opacity=".7"/>`;})()}
-      </svg>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">14-day resting HR trend</div>
-    </div>
-
-    <!-- TRAINING CARD -->
-    <div class="card tappable" onclick="openDetail('training')">
-      <div class="card-label">Training <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Strava</span><span class="card-chevron">›</span></span></div>
-      <div class="train-week">
-        <div class="train-mini"><div class="train-mini-label">Run</div><div class="train-mini-val" style="color:var(--run)">${toMi(weekRun)}</div><div class="train-mini-sub">mi this week</div></div>
-        <div class="train-mini"><div class="train-mini-label">Swim</div><div class="train-mini-val" style="color:var(--swim)">${weekSwim>0?(weekSwim/1000).toFixed(1)+'k':'—'}</div><div class="train-mini-sub">meters</div></div>
-        <div class="train-mini"><div class="train-mini-label">Lifts</div><div class="train-mini-val" style="color:var(--lift)">${weekLift}</div><div class="train-mini-sub">sessions</div></div>
-      </div>
-      ${recentW.slice(0,4).map(w=>`
-      <div class="workout-row">
-        <span class="ws ${sportClass(w.sport_type)}">${sportLabel(w.sport_type)}</span>
-        <span class="workout-name">${w.name||''}${w.pr_count>0?'<span class="pr-dot"></span>':''}</span>
-        <span class="workout-stat">${w.sport_type?.toLowerCase().includes('run')?toMi(w.distance_m)+' · '+toPace(w.duration_s,w.distance_m)+'/mi':w.sport_type?.toLowerCase().includes('swim')?(w.distance_m?Math.round(w.distance_m)+'m':''):toTime(w.duration_s)}</span>
-      </div>`).join('')}
-    </div>
-
-    <!-- BODY CARD -->
-    ${b0?`
-    <div class="card tappable" onclick="openDetail('body')">
-      <div class="card-label">Body <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Apple Health</span><span class="card-chevron">›</span></span></div>
-      ${b0.weight_lbs?`<div class="body-row"><span class="body-key">Weight</span><span class="body-val">${b0.weight_lbs.toFixed(1)} <span style="color:var(--muted);font-size:11px">lbs</span></span></div>`:''}
-      ${b0.body_fat_pct?`<div class="body-row"><span class="body-key">Body fat</span><span class="body-val">${b0.body_fat_pct.toFixed(1)}<span style="color:var(--muted);font-size:11px">%</span></span></div>`:''}
-      ${b0.vo2_max?`<div class="body-row"><span class="body-key">VO2 Max</span><span class="body-val">${b0.vo2_max.toFixed(1)} <span style="color:var(--muted);font-size:11px">ml/kg/min</span></span></div>`:''}
-    </div>`:''}
-
-    <!-- RECOVERY CARD -->
-    ${garmin.length?`
-    <div class="card tappable" onclick="openDetail('recovery')">
-      <div class="card-label">Recovery <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Garmin</span><span class="card-chevron">›</span></span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <div>
-          <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">Body battery</div>
-          <div style="font-family:var(--serif);font-size:38px;line-height:1;color:var(--lift)">${g0?.body_battery_max??'—'}</div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">peak · low ${g0?.body_battery_min??'—'}</div>
-        </div>
-        <div>
-          <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">Stress avg</div>
-          <div style="font-family:var(--serif);font-size:38px;line-height:1;color:${(g0?.stress_avg||50)<25?'var(--lift)':(g0?.stress_avg||50)<50?'var(--steps)':'var(--hr)'}">${g0?.stress_avg??'—'}</div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">${(g0?.stress_avg||50)<25?'low · restful':(g0?.stress_avg||50)<50?'moderate':'elevated'}</div>
-        </div>
-      </div>
-    </div>`:''}
-    <!-- YEAR IN TRAINING -->
-    <div class="card tappable" onclick="openDetail('heatmap')">
-      <div class="card-label">2026 in training <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Strava</span><span class="card-chevron">›</span></span></div>
-      ${(()=>{
-        const totalRuns  = yearW.filter(w=>w.sport_type?.toLowerCase().includes('run')).length;
-        const totalSwims = yearW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).length;
-        const totalLifts = yearW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
-        const totalDays  = new Set(yearW.map(w=>w.date)).size;
-        const dayOfYear  = Math.floor((new Date() - new Date('2026-01-01')) / 86400000) + 1;
-        const pct        = Math.round((totalDays / dayOfYear) * 100);
-        return `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div style="background:var(--card2);border-radius:10px;padding:12px">
-            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Active days</div>
-            <div style="font-family:var(--serif);font-size:28px;color:var(--steps)">${totalDays}</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">${pct}% of year</div>
-          </div>
-          <div style="background:var(--card2);border-radius:10px;padding:12px">
-            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Runs</div>
-            <div style="font-family:var(--serif);font-size:28px;color:var(--run)">${totalRuns}</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
-          </div>
-          <div style="background:var(--card2);border-radius:10px;padding:12px">
-            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Swims</div>
-            <div style="font-family:var(--serif);font-size:28px;color:var(--swim)">${totalSwims}</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
-          </div>
-          <div style="background:var(--card2);border-radius:10px;padding:12px">
-            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Lifts</div>
-            <div style="font-family:var(--serif);font-size:28px;color:var(--lift)">${totalLifts}</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
-          </div>
-        </div>`;
-      })()}
-    </div>
-
-    `;
-
+    document.getElementById('last-sync').textContent = `synced ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
     btn.textContent = '↻ Refresh'; btn.classList.remove('syncing');
-    document.getElementById('last-sync').textContent = 'updated ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 
   } catch(err) {
-    console.error(err);
-    document.getElementById('cards').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
-    btn.textContent = '↻ Refresh'; btn.classList.remove('syncing');
-  }
-}
-
-// ── AI DAILY INSIGHT ──────────────────────────────────────────
-async function generateInsight({ s0, h0, a0, b0, g0, sleep, hr, weekW, avgHRV, avgSleep }) {
-  const el = document.getElementById('insight-text');
-  const meta = document.getElementById('insight-meta');
-  if (!el) return;
-
-  // Build context from real data
-  const ctx = {
-    today: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
-    sleep: s0 ? `${s0.duration_h?.toFixed(1)}h total, deep ${s0.deep_h?.toFixed(1)||'?'}h, REM ${s0.rem_h?.toFixed(1)||'?'}h` : 'no data',
-    sleep7DayAvg: avgSleep + 'h',
-    restingHR: h0?.resting_hr ? `${h0.resting_hr} bpm` : 'no data',
-    hrv: h0?.hrv_ms ? `${Math.round(h0.hrv_ms)} ms` : 'no data',
-    hrv7DayAvg: avgHRV + ' ms',
-    steps: a0?.steps?.toLocaleString() || 'no data',
-    activeCal: a0?.active_calories || 'no data',
-    bodyBattery: g0 ? `${g0.body_battery_max} peak, ${g0.body_battery_min} low` : 'no data',
-    stress: g0?.stress_avg ? `${g0.stress_avg} avg` : 'no data',
-    weight: b0?.weight_lbs ? `${b0.weight_lbs.toFixed(1)} lbs` : 'no data',
-    weeklyRuns: weekW.filter(w=>w.sport_type?.toLowerCase().includes('run')).length,
-    weeklySwims: weekW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).length,
-    weeklyLifts: weekW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length,
-    todayWorkout: getTodaySession().label,
-    phase: 'Phase 1 Week 3 of 12-week recomp block, half-ironman training',
-  };
-
-  const prompt = `You are a concise health and training coach. Danny is a 30-something athlete training for a half-ironman while doing a 12-week body recomposition. Here is his health data for today:
-
-Today: ${ctx.today}
-Sleep: ${ctx.sleep} (7-day avg: ${ctx.sleep7DayAvg})
-Resting HR: ${ctx.restingHR} (7-day avg HRV: ${ctx.hrv7DayAvg}, today's HRV: ${ctx.hrv})
-Steps: ${ctx.steps} | Active calories: ${ctx.activeCal}
-Body battery: ${ctx.bodyBattery} | Stress: ${ctx.stress}
-Weight: ${ctx.weight}
-This week: ${ctx.weeklyRuns} runs, ${ctx.weeklySwims} swims, ${ctx.weeklyLifts} lifts
-Today's planned workout: ${ctx.todayWorkout}
-Training context: ${ctx.phase}
-
-Write ONE sentence (max 20 words) that gives Danny a genuinely useful, specific insight about his data today. Be direct and personal. Don't start with "Today" or his name. Focus on the most interesting pattern or actionable observation. Examples of good insights: "HRV is 12% above your baseline — good day to push the Lower A weights." or "Three nights under 7h this week — prioritize an early bedtime tonight." or "Body battery recovered to 81 after yesterday's rest — you're primed for today's lift."`;
-
-  try {
-    const res = await fetch('/api/insight', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    });
-    const data = await res.json();
-    const text = data.insight?.trim();
-    if (text && el) {
-      el.textContent = text;
-      meta.textContent = `Generated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · based on today's data`;
-    }
-  } catch(err) {
-    if (el) el.innerHTML = '<span style="color:var(--muted2);font-size:13px;font-style:italic">Could not generate insight — check connection</span>';
+    console.error('loadAll error:', err);
+    document.getElementById('cards').innerHTML = `
+      <div style="padding:2rem;text-align:center;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:12px">Could not load health data</div>
+        ${buildTodayWorkoutCard()}
+      </div>`;
+    document.getElementById('last-sync').textContent = 'sync failed';
+    btn.textContent = '↻ Retry'; btn.classList.remove('syncing');
   }
 }
 
 // ── DETAIL PANELS ─────────────────────────────────────────────
 function openDetail(type) {
-  detailCharts.forEach(c=>c.destroy()); detailCharts=[];
-  const panel = document.getElementById('detail-panel');
-  const titles = { sleep:'Sleep', movement:'Movement', heart:'Heart Rate & HRV', training:'Training', body:'Body', recovery:'Recovery', workout:"Today's Workout", heatmap:'2026 in Training' };
-  document.getElementById('detail-title').textContent = titles[type]||type;
-  document.getElementById('detail-body').innerHTML = buildDetail(type);
-  document.getElementById('overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  panel.scrollTop = 0;
-  // Build charts after render
-  setTimeout(() => buildDetailCharts(type), 50);
-}
-
-function closeDetail(e) {
-  if (e.target === document.getElementById('overlay') || e.target.classList.contains('overlay-backdrop')) closeDetailBtn();
-}
-function closeDetailBtn() {
-  document.getElementById('overlay').classList.remove('open');
-  document.body.style.overflow = '';
-  detailCharts.forEach(c=>c.destroy()); detailCharts=[];
-}
-
-function buildDetail(type) {
-  const { sleep, hr, activity, body, recentW, weekW, garmin, sleep90, hr90, activity90 } = DATA;
-  const s0=sleep[0], h0=hr[0], a0=activity[0], b0=body[0], g0=garmin[0];
-
-  if (type === 'sleep') {
-    const avgDeep = sleep90.filter(s=>s.deep_h).length ? (sleep90.filter(s=>s.deep_h).reduce((a,b)=>a+(b.deep_h||0),0)/sleep90.filter(s=>s.deep_h).length).toFixed(1) : '—';
-    const avgREM  = sleep90.filter(s=>s.rem_h).length ? (sleep90.filter(s=>s.rem_h).reduce((a,b)=>a+(b.rem_h||0),0)/sleep90.filter(s=>s.rem_h).length).toFixed(1) : '—';
-    const avgTot  = sleep90.length ? (sleep90.reduce((a,b)=>a+(b.duration_h||0),0)/sleep90.length).toFixed(1) : '—';
-    const best    = sleep90.reduce((a,b)=>(b.duration_h||0)>(a.duration_h||0)?b:a, sleep90[0]);
-    return `
-    <div class="detail-section">
-      <div class="grid2">
-        <div class="mini-stat"><div class="mini-stat-label">Last night</div><div class="mini-stat-val" style="color:var(--sleep)">${s0?.duration_h?.toFixed(1)??'—'}h</div><div class="mini-stat-sub">Deep ${s0?.deep_h?.toFixed(1)||'—'}h · REM ${s0?.rem_h?.toFixed(1)||'—'}h</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">90-day avg</div><div class="mini-stat-val" style="color:var(--sleep)">${avgTot}h</div><div class="mini-stat-sub">Deep avg ${avgDeep}h</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Avg deep</div><div class="mini-stat-val" style="color:#5a4fa8">${avgDeep}h</div><div class="mini-stat-sub">per night</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Avg REM</div><div class="mini-stat-val" style="color:#8b7ec8">${avgREM}h</div><div class="mini-stat-sub">per night</div></div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Sleep duration — 90 days</div>
-      <div class="chart-wrap"><canvas id="sleepChart"></canvas></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Sleep stages — last 14 nights</div>
-      <div class="chart-wrap"><canvas id="stageChart"></canvas></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Recent nights</div>
-      ${sleep90.slice(0,14).map(s=>{
-        const pct=(s.duration_h||0)/10;
-        const c=(s.duration_h||0)>=8?'#8b7ec8':(s.duration_h||0)>=7?'#6a5fa8':'#4a3f88';
-        return `<div class="history-row">
-          <span class="history-date">${shortDate(s.date)}</span>
-          <div class="history-bar-wrap"><div class="history-bar" style="width:${Math.min(pct*100,100)}%;background:${c}"></div></div>
-          <span class="history-val">${(s.duration_h||0).toFixed(1)}h</span>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
-
-  if (type === 'movement') {
-    const avgSteps = activity90.length ? Math.round(activity90.reduce((a,b)=>a+(b.steps||0),0)/activity90.length).toLocaleString() : '—';
-    const avgCal   = activity90.length ? Math.round(activity90.reduce((a,b)=>a+(b.active_calories||0),0)/activity90.length).toLocaleString() : '—';
-    const bestSteps = activity90.reduce((a,b)=>(b.steps||0)>(a.steps||0)?b:a, activity90[0]||{});
-    return `
-    <div class="detail-section">
-      <div class="grid2">
-        <div class="mini-stat"><div class="mini-stat-label">Today</div><div class="mini-stat-val" style="color:var(--steps)">${a0?.steps?.toLocaleString()??'—'}</div><div class="mini-stat-sub">steps</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">90-day avg</div><div class="mini-stat-val" style="color:var(--steps)">${avgSteps}</div><div class="mini-stat-sub">steps/day</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Active cal</div><div class="mini-stat-val" style="color:var(--run)">${a0?.active_calories?.toLocaleString()??'—'}</div><div class="mini-stat-sub">today</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Avg cal</div><div class="mini-stat-val" style="color:var(--run)">${avgCal}</div><div class="mini-stat-sub">per day</div></div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Steps — 90 days</div>
-      <div class="chart-wrap"><canvas id="stepsChart"></canvas></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Recent days</div>
-      ${activity90.slice(0,14).map(a=>{
-        const max=Math.max(...activity90.slice(0,14).map(x=>x.steps||0),1);
-        return `<div class="history-row">
-          <span class="history-date">${shortDate(a.date)}</span>
-          <div class="history-bar-wrap"><div class="history-bar" style="width:${Math.round(((a.steps||0)/max)*100)}%;background:var(--steps)"></div></div>
-          <span class="history-val">${(a.steps||0).toLocaleString()}</span>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
-
-  if (type === 'heart') {
-    const hrvArr = hr90.filter(h=>h.hrv_ms&&!isNaN(h.hrv_ms));
-    const avgHRV = hrvArr.length ? Math.round(hrvArr.reduce((a,b)=>a+b.hrv_ms,0)/hrvArr.length) : '—';
-    const hrArr  = hr90.filter(h=>h.resting_hr);
-    const avgRHR = hrArr.length ? Math.round(hrArr.reduce((a,b)=>a+b.resting_hr,0)/hrArr.length) : '—';
-    const minRHR = hrArr.length ? Math.min(...hrArr.map(h=>h.resting_hr)) : '—';
-    const maxHRV = hrvArr.length ? Math.max(...hrvArr.map(h=>h.hrv_ms)) : '—';
-    return `
-    <div class="detail-section">
-      <div class="grid2">
-        <div class="mini-stat"><div class="mini-stat-label">Resting HR</div><div class="mini-stat-val" style="color:var(--hr)">${h0?.resting_hr??'—'}</div><div class="mini-stat-sub">bpm today</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">HRV</div><div class="mini-stat-val" style="color:var(--sleep)">${h0?.hrv_ms?Math.round(h0.hrv_ms):'—'}</div><div class="mini-stat-sub">ms today</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">90-day avg HR</div><div class="mini-stat-val" style="color:var(--hr)">${avgRHR}</div><div class="mini-stat-sub">lowest: ${minRHR} bpm</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">90-day avg HRV</div><div class="mini-stat-val" style="color:var(--sleep)">${avgHRV}</div><div class="mini-stat-sub">peak: ${typeof maxHRV==='number'?Math.round(maxHRV):maxHRV} ms</div></div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Resting HR — 90 days</div>
-      <div class="chart-wrap"><canvas id="hrChart"></canvas></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">HRV — 90 days</div>
-      <div class="chart-wrap"><canvas id="hrvChart"></canvas></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Recent readings</div>
-      ${hr90.slice(0,14).map(h=>{
-        const max=Math.max(...hr90.slice(0,14).map(x=>x.resting_hr||0),1);
-        return `<div class="history-row">
-          <span class="history-date">${shortDate(h.date)}</span>
-          <div class="history-bar-wrap"><div class="history-bar" style="width:${Math.round(((h.resting_hr||0)/max)*100)}%;background:var(--hr)"></div></div>
-          <span class="history-val">${h.resting_hr??'—'} bpm</span>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
-
-  if (type === 'training') {
-    const allRuns  = recentW.filter(w=>w.sport_type?.toLowerCase().includes('run'));
-    const allSwims = recentW.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
-    const weekRun  = weekW.filter(w=>w.sport_type?.toLowerCase().includes('run')).reduce((a,b)=>a+(b.distance_m||0),0);
-    const weekSwim = weekW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).reduce((a,b)=>a+(b.distance_m||0),0);
-    const weekLift = weekW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
-    return `
-    <div class="detail-section">
-      <div class="grid2">
-        <div class="mini-stat"><div class="mini-stat-label">Run this week</div><div class="mini-stat-val" style="color:var(--run)">${toMi(weekRun)}</div><div class="mini-stat-sub">miles</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Swim this week</div><div class="mini-stat-val" style="color:var(--swim)">${weekSwim>0?(weekSwim/1000).toFixed(1)+'k':'—'}</div><div class="mini-stat-sub">meters</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Lifts</div><div class="mini-stat-val" style="color:var(--lift)">${weekLift}</div><div class="mini-stat-sub">this week</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Activities</div><div class="mini-stat-val" style="color:var(--muted)">${weekW.length}</div><div class="mini-stat-sub">this week</div></div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Recent workouts</div>
-      ${recentW.map(w=>`
-      <div class="workout-item">
-        <div class="workout-item-header">
-          <span class="workout-badge ${sportClass(w.sport_type)}" style="font-family:var(--mono)">${sportLabel(w.sport_type)}</span>
-          <span class="workout-item-name">${w.name||''}${w.pr_count>0?'<span class="pr-dot"></span>':''}</span>
-          <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${w.date}</span>
-        </div>
-        <div class="workout-item-stats">
-          ${w.sport_type?.toLowerCase().includes('run')?`<span>${toMi(w.distance_m)} mi</span><span>${toPace(w.duration_s,w.distance_m)}/mi</span><span>${toTime(w.duration_s)}</span>`:
-            w.sport_type?.toLowerCase().includes('swim')?`<span>${w.distance_m?Math.round(w.distance_m)+'m':''}</span><span>${toTime(w.duration_s)}</span>`:
-            `<span>${toTime(w.duration_s)}</span>`}
-          ${w.avg_hr?`<span>${Math.round(w.avg_hr)} bpm</span>`:''}
-          ${w.calories?`<span>${w.calories} cal</span>`:''}
-        </div>
-      </div>`).join('')}
-    </div>`;
-  }
-
-  if (type === 'body') {
-    const weightData = body.filter(b=>b.weight_lbs).slice(0,90);
-    const startW = weightData.length ? weightData[weightData.length-1].weight_lbs : null;
-    const currW  = weightData.length ? weightData[0].weight_lbs : null;
-    const change = startW&&currW ? (currW-startW).toFixed(1) : null;
-    return `
-    <div class="detail-section">
-      <div class="grid2">
-        <div class="mini-stat"><div class="mini-stat-label">Weight</div><div class="mini-stat-val" style="color:var(--steps)">${b0?.weight_lbs?.toFixed(1)??'—'}</div><div class="mini-stat-sub">lbs today</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Change</div><div class="mini-stat-val" style="color:${change<0?'var(--lift)':change>0?'var(--hr)':'var(--muted)'}">${change?`${change>0?'+':''}${change}`:'-'}</div><div class="mini-stat-sub">lbs vs 90 days ago</div></div>
-        ${b0?.body_fat_pct?`<div class="mini-stat"><div class="mini-stat-label">Body fat</div><div class="mini-stat-val" style="color:var(--muted)">${b0.body_fat_pct.toFixed(1)}%</div><div class="mini-stat-sub">today</div></div>`:''}
-        ${b0?.vo2_max?`<div class="mini-stat"><div class="mini-stat-label">VO2 Max</div><div class="mini-stat-val" style="color:var(--swim)">${b0.vo2_max.toFixed(1)}</div><div class="mini-stat-sub">ml/kg/min</div></div>`:''}
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Weight trend — 90 days</div>
-      <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Weight log</div>
-      ${weightData.slice(0,20).map(b=>{
-        const max=Math.max(...weightData.slice(0,20).map(x=>x.weight_lbs||0),1);
-        const min=Math.min(...weightData.slice(0,20).map(x=>x.weight_lbs||0));
-        const pct=((b.weight_lbs-min)/(max-min+1))*100;
-        return `<div class="history-row">
-          <span class="history-date">${shortDate(b.date)}</span>
-          <div class="history-bar-wrap"><div class="history-bar" style="width:${Math.max(pct,5)}%;background:var(--steps)"></div></div>
-          <span class="history-val">${b.weight_lbs.toFixed(1)} lbs</span>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
+  detailCharts.forEach(c => c.destroy());
+  detailCharts = [];
+  const overlay = document.getElementById('overlay');
+  const title = document.getElementById('detail-title');
+  const body = document.getElementById('detail-body');
 
   if (type === 'workout') {
     const s = getTodaySession();
-    const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const dow = new Date().getDay();
-
-    if (s.type === 'rest') {
-      return `<div class="detail-section">
-        <div style="text-align:center;padding:2rem 0">
-          <div style="font-size:48px;margin-bottom:12px">😴</div>
-          <div style="font-family:var(--serif);font-size:24px;margin-bottom:8px">Rest day</div>
-          <div style="font-size:13px;color:var(--muted)">${s.note}</div>
-        </div>
-        <div style="background:var(--card2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--muted);line-height:1.7">
-          Recovery is where adaptation happens. Use today to sleep, eat well, and let last week's training sink in. A short walk is fine but keep the heart rate low.
-        </div>
-      </div>`;
-    }
-
-    if (s.type === 'lift') {
-      return `
-      <div class="detail-section">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
-          <div style="width:44px;height:44px;border-radius:10px;background:rgba(168,196,122,0.15);display:flex;align-items:center;justify-content:center;font-size:22px">🏋️</div>
-          <div>
-            <div style="font-family:var(--serif);font-size:26px;color:var(--lift)">${s.label}</div>
-            <div style="font-size:12px;color:var(--muted)">${s.note}</div>
-          </div>
-        </div>
-        <div style="background:var(--card2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);margin-bottom:1.5rem">
-          Phase 1 · Week 3 · RPE 6–7 · Rest 60–90s between sets · Log weights as you go
-        </div>
-      </div>
-      <div class="detail-section">
-        <div class="detail-section-title">Exercises</div>
-        ${s.exercises.map((e,i)=>`
-        <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-            <div>
-              <div style="font-size:14px;font-weight:500">${e.name}</div>
-              <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">${e.sets}</div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-family:var(--mono);font-size:12px;color:var(--lift)">${e.weights}</div>
-              <div style="font-size:10px;color:var(--muted2);margin-top:2px">lbs</div>
-            </div>
-          </div>
-          ${e.note?`<div style="font-size:11px;color:var(--muted2);margin-top:4px;font-style:italic">${e.note}</div>`:''}
-        </div>`).join('')}
-      </div>
-      ${s.cardio?`
-      <div class="detail-section">
-        <div class="detail-section-title">Also today — ${s.cardio.label}</div>
-        <div style="background:rgba(106,179,168,0.06);border-radius:10px;padding:14px;border-left:3px solid var(--swim)">
-          <div style="font-size:13px;color:var(--swim);margin-bottom:6px;font-weight:500">${s.cardio.label}</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.7">${s.cardio.detail}</div>
-        </div>
-      </div>`:''}
-      <div class="detail-section">
-        <div class="detail-section-title">Week 4 preview</div>
-        <div style="background:var(--card2);border-radius:10px;padding:14px;font-size:12px;color:var(--muted);line-height:1.7">
-          Week 4 is a <strong style="color:var(--text)">deload week</strong> — drop volume by ~20%, keep the same exercises but reduce sets to 2×10. This is intentional. Don't skip it.
-        </div>
-      </div>`;
-    }
-
-    if (s.type === 'run+swim') {
-      return `
-      <div class="detail-section">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
-          <div style="width:44px;height:44px;border-radius:10px;background:rgba(212,132,90,0.12);display:flex;align-items:center;justify-content:center;font-size:22px">🏃</div>
-          <div>
-            <div style="font-family:var(--serif);font-size:26px;color:var(--run)">${s.label}</div>
-            <div style="font-size:12px;color:var(--muted)">${s.note}</div>
-          </div>
-        </div>
-        <div style="background:var(--card2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);margin-bottom:1.5rem">
-          Phase 1 · Week 3 · All Zone 2 · No hard efforts this phase — fitness is building underneath
-        </div>
-      </div>
-      <div class="detail-section">
-        <div class="detail-section-title">Sessions</div>
-        ${s.sessions.map(sess=>`
-        <div style="padding:14px;background:${sess.type==='run'?'rgba(212,132,90,0.06)':'rgba(106,179,168,0.06)'};border-radius:10px;border-left:3px solid ${sess.type==='run'?'var(--run)':'var(--swim)'};margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <span style="font-size:18px">${sess.type==='run'?'🏃':'🏊'}</span>
-            <span style="font-size:14px;font-weight:500;color:${sess.type==='run'?'var(--run)':'var(--swim)'}">${sess.label}</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.8">${sess.detail.split(' · ').map(d=>`• ${d}`).join('<br>')}</div>
-        </div>`).join('')}
-      </div>
-      <div class="detail-section">
-        <div class="detail-section-title">Zone 2 guide</div>
-        <div style="background:var(--card2);border-radius:10px;padding:14px;font-size:12px;color:var(--muted);line-height:1.8">
-          <div style="margin-bottom:4px"><strong style="color:var(--text)">Heart rate:</strong> 125–140 bpm</div>
-          <div style="margin-bottom:4px"><strong style="color:var(--text)">Feel:</strong> Conversational — full sentences, nose breathing ok</div>
-          <div style="margin-bottom:4px"><strong style="color:var(--text)">Pace:</strong> ~9:00–9:45/mi based on your recent runs</div>
-          <div><strong style="color:var(--text)">Why:</strong> Zone 2 builds your aerobic base and fat-burning engine. The PRs you've been hitting lately are proof it's working.</div>
-        </div>
-      </div>`;
-    }
-    return '';
+    title.textContent = s.label || 'Today';
+    body.innerHTML = buildWorkoutDetail();
+    overlay.classList.add('open');
+    return;
   }
 
-  if (type === 'recovery') {
-    return `
-    <div class="detail-section">
-      <div class="grid2">
-        <div class="mini-stat"><div class="mini-stat-label">Body battery</div><div class="mini-stat-val" style="color:var(--lift)">${g0?.body_battery_max??'—'}</div><div class="mini-stat-sub">peak today · low ${g0?.body_battery_min??'—'}</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Stress avg</div><div class="mini-stat-val" style="color:${(g0?.stress_avg||50)<25?'var(--lift)':(g0?.stress_avg||50)<50?'var(--steps)':'var(--hr)'}">${g0?.stress_avg??'—'}</div><div class="mini-stat-sub">${(g0?.stress_avg||50)<25?'low · restful':(g0?.stress_avg||50)<50?'moderate':'elevated'}</div></div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Body battery — recent days</div>
-      <div class="chart-wrap"><canvas id="batteryChart"></canvas></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Recent days</div>
-      ${garmin.slice(0,7).map(g=>`
-      <div class="history-row">
-        <span class="history-date">${shortDate(g.date)}</span>
-        <div class="history-bar-wrap"><div class="history-bar" style="width:${g.body_battery_max||0}%;background:var(--lift)"></div></div>
-        <span class="history-val">${g.body_battery_max??'—'} / ${g.body_battery_min??'—'}</span>
-      </div>`).join('')}
-    </div>`;
-  }
-  if (type === 'heatmap') {
-    const { yearW } = DATA;
-    const totalRuns  = yearW.filter(w=>w.sport_type?.toLowerCase().includes('run')).length;
-    const totalSwims = yearW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).length;
-    const totalLifts = yearW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
-    const totalDays  = new Set(yearW.map(w=>w.date)).size;
-    const dayOfYear  = Math.floor((new Date() - new Date('2026-01-01')) / 86400000) + 1;
-    const pct        = Math.round((totalDays / dayOfYear) * 100);
-    return `
-    <div class="detail-section">
-      <div class="grid2">
-        <div class="mini-stat"><div class="mini-stat-label">Active days</div><div class="mini-stat-val" style="color:var(--steps)">${totalDays}</div><div class="mini-stat-sub">${pct}% of year so far</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Runs</div><div class="mini-stat-val" style="color:var(--run)">${totalRuns}</div><div class="mini-stat-sub">sessions</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Swims</div><div class="mini-stat-val" style="color:var(--swim)">${totalSwims}</div><div class="mini-stat-sub">sessions</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Lifts</div><div class="mini-stat-val" style="color:var(--lift)">${totalLifts}</div><div class="mini-stat-sub">sessions</div></div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Every day of 2026</div>
-      <div style="overflow-x:auto;padding-bottom:4px">${buildHeatmap(yearW, true)}</div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Legend</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#d4845a;flex-shrink:0"></span>Run</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#6ab3a8;flex-shrink:0"></span>Swim</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#a8c47a;flex-shrink:0"></span>Lift</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#8a82c8;flex-shrink:0"></span>Ride</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#e8c060;flex-shrink:0"></span>Triple day</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#1e1c18;border:1px solid #3a3530;flex-shrink:0"></span>Rest</div>
-      </div>
-    </div>`;
-  }
+  const { sleep, hr, activity, body: bodyData, recentW, garmin, sleep90, hr90, activity90, yearW } = DATA;
+  if (!sleep) return;
 
-  return '';
-}
-
-function buildDetailCharts(type) {
-  const { sleep90, hr90, activity90, body, garmin } = DATA;
-  const chartDefaults = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    elements: { point: { radius: 0 } },
-  };
-  const gridColor = 'rgba(255,255,255,0.04)';
-  const tickColor = '#4a4540';
-  const tickFont  = { size: 10, family: "'DM Mono', monospace" };
+  const s0=sleep[0], h0=hr[0], a0=activity[0], b0=bodyData[0], g0=garmin?.[0];
 
   if (type === 'sleep') {
-    const s = [...sleep90].reverse();
-    const c1 = new Chart(document.getElementById('sleepChart'), {
-      type: 'bar',
-      data: { labels: s.map(x=>shortDate(x.date)), datasets: [{ data: s.map(x=>x.duration_h||0), backgroundColor: s.map(x=>(x.duration_h||0)>=7?'#6a5fa8':'#3a3040'), borderRadius: 2 }] },
-      options: { ...chartDefaults, scales: { x: { ticks: { color: tickColor, font: tickFont, maxTicksLimit: 8, maxRotation: 0 }, grid: { display: false } }, y: { ticks: { color: tickColor, font: tickFont, callback: v=>`${v}h` }, grid: { color: gridColor } } } }
-    });
-    detailCharts.push(c1);
-
-    const s14 = [...sleep90.slice(0,14)].reverse().filter(x=>x.deep_h||x.rem_h);
-    const c2 = new Chart(document.getElementById('stageChart'), {
-      type: 'bar',
-      data: { labels: s14.map(x=>shortDate(x.date)), datasets: [
-        { label: 'Deep', data: s14.map(x=>x.deep_h||0), backgroundColor: '#5a4fa8', stack: 'a', borderRadius: 2 },
-        { label: 'REM',  data: s14.map(x=>x.rem_h||0),  backgroundColor: '#8b7ec8', stack: 'a' },
-        { label: 'Core', data: s14.map(x=>x.core_h||0), backgroundColor: '#c8b8f0', stack: 'a' },
-      ]},
-      options: { ...chartDefaults, scales: { x: { stacked: true, ticks: { color: tickColor, font: tickFont, maxRotation: 0 }, grid: { display: false } }, y: { stacked: true, ticks: { color: tickColor, font: tickFont, callback: v=>`${v}h` }, grid: { color: gridColor } } }, plugins: { legend: { display: true, labels: { color: '#7a7168', font: tickFont, usePointStyle: true, padding: 12 } } } }
-    });
-    detailCharts.push(c2);
+    title.textContent = 'Sleep';
+    const avgSleep = sleep.length ? (sleep.reduce((a,b)=>a+(b.duration_h||0),0)/sleep.length).toFixed(1) : '—';
+    body.innerHTML = `
+      <div class="detail-section">
+        <div class="big-stat"><div class="big-stat-val" style="color:var(--sleep)">${s0?.duration_h?.toFixed(1)??'—'}h</div><div class="big-stat-sub">Last night · avg ${avgSleep}h</div></div>
+        <div class="grid2">
+          <div class="mini-stat"><div class="mini-stat-label">Deep</div><div class="mini-stat-val" style="color:#5a4fa8">${s0?.deep_h?.toFixed(1)??'—'}h</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">REM</div><div class="mini-stat-val" style="color:#8b7ec8">${s0?.rem_h?.toFixed(1)??'—'}h</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Core</div><div class="mini-stat-val" style="color:#c8b8f0">${s0?.core_h?.toFixed(1)??'—'}h</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Awake</div><div class="mini-stat-val" style="color:var(--muted)">${s0?.awake_h?.toFixed(1)??'—'}h</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">14-day history</div>
+        ${sleep.slice(0,14).map(s=>{const h=s.duration_h||0;const pct=Math.round((h/10)*100);return`<div class="history-row"><span class="history-date">${shortDate(s.date)}</span><div class="history-bar-wrap"><div class="history-bar" style="width:${pct}%;background:${h>=8?'#8b7ec8':h>=7?'#6a5fa8':'#4a3f88'}"></div></div><span class="history-val">${h.toFixed(1)}h</span></div>`;}).join('')}
+      </div>`;
   }
 
   if (type === 'movement') {
-    const a = [...activity90].reverse();
-    const c = new Chart(document.getElementById('stepsChart'), {
-      type: 'bar',
-      data: { labels: a.map(x=>shortDate(x.date)), datasets: [{ data: a.map(x=>x.steps||0), backgroundColor: 'rgba(196,168,90,0.6)', borderRadius: 2 }] },
-      options: { ...chartDefaults, scales: { x: { ticks: { color: tickColor, font: tickFont, maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } }, y: { ticks: { color: tickColor, font: tickFont, callback: v=>v>=1000?`${(v/1000).toFixed(0)}k`:v }, grid: { color: gridColor } } } }
-    });
-    detailCharts.push(c);
+    title.textContent = 'Movement';
+    body.innerHTML = `
+      <div class="detail-section">
+        <div class="grid2">
+          <div class="mini-stat"><div class="mini-stat-label">Steps</div><div class="mini-stat-val" style="color:var(--steps)">${a0?.steps?.toLocaleString()??'—'}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Active cal</div><div class="mini-stat-val" style="color:var(--run)">${a0?.active_calories?.toLocaleString()??'—'}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Flights</div><div class="mini-stat-val">${a0?.flights_climbed??'—'}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Stand hrs</div><div class="mini-stat-val">${a0?.stand_hours??'—'}</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">14-day steps</div>
+        ${activity.slice(0,14).map(d=>{const s=d.steps||0;const pct=Math.round((s/12000)*100);return`<div class="history-row"><span class="history-date">${shortDate(d.date)}</span><div class="history-bar-wrap"><div class="history-bar" style="width:${Math.min(pct,100)}%;background:var(--steps)"></div></div><span class="history-val">${(s/1000).toFixed(1)}k</span></div>`;}).join('')}
+      </div>`;
   }
 
   if (type === 'heart') {
-    const h = [...hr90].reverse().filter(x=>x.resting_hr);
-    const c1 = new Chart(document.getElementById('hrChart'), {
-      type: 'line',
-      data: { labels: h.map(x=>shortDate(x.date)), datasets: [{ data: h.map(x=>x.resting_hr), borderColor: '#c87e8b', backgroundColor: 'rgba(200,126,139,0.08)', borderWidth: 2, fill: true, tension: 0.3 }] },
-      options: { ...chartDefaults, scales: { x: { ticks: { color: tickColor, font: tickFont, maxTicksLimit: 8, maxRotation: 0 }, grid: { display: false } }, y: { reverse: false, ticks: { color: tickColor, font: tickFont, callback: v=>`${v}` }, grid: { color: gridColor } } } }
-    });
-    detailCharts.push(c1);
+    title.textContent = 'Heart';
+    const avgHRV = hr.filter(h=>h.hrv_ms).length ? Math.round(hr.filter(h=>h.hrv_ms).reduce((a,b)=>a+b.hrv_ms,0)/hr.filter(h=>h.hrv_ms).length) : '—';
+    body.innerHTML = `
+      <div class="detail-section">
+        <div class="grid2">
+          <div class="mini-stat"><div class="mini-stat-label">Resting HR</div><div class="mini-stat-val" style="color:var(--hr)">${h0?.resting_hr??'—'}</div><div class="mini-stat-sub">bpm</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">HRV</div><div class="mini-stat-val" style="color:var(--sleep)">${h0?.hrv_ms?Math.round(h0.hrv_ms):avgHRV}</div><div class="mini-stat-sub">ms · 30d avg ${avgHRV}</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Resting HR history</div>
+        ${hr.slice(0,14).map(h=>{const v=h.resting_hr||0;const pct=Math.round(((v-40)/60)*100);return`<div class="history-row"><span class="history-date">${shortDate(h.date)}</span><div class="history-bar-wrap"><div class="history-bar" style="width:${Math.min(pct,100)}%;background:var(--hr)"></div></div><span class="history-val">${v||'—'}</span></div>`;}).join('')}
+      </div>`;
+  }
 
-    const hv = [...hr90].reverse().filter(x=>x.hrv_ms&&!isNaN(x.hrv_ms));
-    const c2 = new Chart(document.getElementById('hrvChart'), {
-      type: 'line',
-      data: { labels: hv.map(x=>shortDate(x.date)), datasets: [{ data: hv.map(x=>x.hrv_ms), borderColor: '#8b7ec8', backgroundColor: 'rgba(139,126,200,0.08)', borderWidth: 2, fill: true, tension: 0.3 }] },
-      options: { ...chartDefaults, scales: { x: { ticks: { color: tickColor, font: tickFont, maxTicksLimit: 8, maxRotation: 0 }, grid: { display: false } }, y: { ticks: { color: tickColor, font: tickFont, callback: v=>`${v}ms` }, grid: { color: gridColor } } } }
-    });
-    detailCharts.push(c2);
+  if (type === 'training') {
+    title.textContent = 'Training';
+    body.innerHTML = `
+      <div class="detail-section">
+        <div class="detail-section-title">Recent workouts</div>
+        ${recentW.map(w=>`
+          <div class="workout-item">
+            <div class="workout-item-header">
+              <span class="workout-badge" style="background:${sportColor(w.sport_type)}22;color:${sportColor(w.sport_type)}">${sportLabel(w.sport_type)}</span>
+              <span class="workout-item-name">${w.name||''}${w.pr_count>0?'<span class="pr-dot"></span>':''}</span>
+            </div>
+            <div class="workout-item-stats">
+              ${w.sport_type?.toLowerCase().includes('run')?`<span>${toMi(w.distance_m)} mi · ${toPace(w.duration_s,w.distance_m)}/mi · ${toTime(w.duration_s)}</span>`:''}
+              ${w.sport_type?.toLowerCase().includes('swim')?`<span>${w.distance_m?Math.round(w.distance_m)+'m':''} · ${toTime(w.duration_s)}</span>`:''}
+              ${!w.sport_type?.toLowerCase().includes('run')&&!w.sport_type?.toLowerCase().includes('swim')?`<span>${toTime(w.duration_s)}</span>`:''}
+              ${w.relative_effort?`<span>RE: ${w.relative_effort}</span>`:''}
+            </div>
+          </div>`).join('')}
+      </div>`;
   }
 
   if (type === 'body') {
-    const bw = [...body.filter(b=>b.weight_lbs)].reverse();
-    const c = new Chart(document.getElementById('weightChart'), {
-      type: 'line',
-      data: { labels: bw.map(x=>shortDate(x.date)), datasets: [{ data: bw.map(x=>x.weight_lbs), borderColor: '#c4a85a', backgroundColor: 'rgba(196,168,90,0.08)', borderWidth: 2, fill: true, tension: 0.3 }] },
-      options: { ...chartDefaults, scales: { x: { ticks: { color: tickColor, font: tickFont, maxTicksLimit: 8, maxRotation: 0 }, grid: { display: false } }, y: { ticks: { color: tickColor, font: tickFont, callback: v=>`${v}` }, grid: { color: gridColor } } } }
-    });
-    detailCharts.push(c);
+    title.textContent = 'Body';
+    body.innerHTML = `
+      <div class="detail-section">
+        <div class="stat-row"><span class="stat-key">Weight</span><span class="stat-val">${b0?.weight_lbs?.toFixed(1)??'—'} lbs</span></div>
+        <div class="stat-row"><span class="stat-key">Body fat</span><span class="stat-val">${b0?.body_fat_pct?.toFixed(1)??'—'}%</span></div>
+        <div class="stat-row"><span class="stat-key">Lean mass</span><span class="stat-val">${b0?.weight_lbs&&b0?.body_fat_pct?(b0.weight_lbs*(1-b0.body_fat_pct/100)).toFixed(1)+'lbs':'—'}</span></div>
+        <div class="stat-row"><span class="stat-key">VO2 Max</span><span class="stat-val">${b0?.vo2_max?.toFixed(1)??'—'}</span></div>
+      </div>`;
   }
 
-  if (type === 'recovery' && garmin.length) {
-    const g = [...garmin].reverse();
-    const c = new Chart(document.getElementById('batteryChart'), {
-      type: 'bar',
-      data: { labels: g.map(x=>shortDate(x.date)), datasets: [
-        { label: 'Max', data: g.map(x=>x.body_battery_max||0), backgroundColor: 'rgba(168,196,122,0.7)', borderRadius: 2, stack: 'a' },
-      ]},
-      options: { ...chartDefaults, scales: { x: { ticks: { color: tickColor, font: tickFont, maxRotation: 0 }, grid: { display: false } }, y: { min: 0, max: 100, ticks: { color: tickColor, font: tickFont }, grid: { color: gridColor } } } }
-    });
-    detailCharts.push(c);
+  if (type === 'recovery') {
+    title.textContent = 'Recovery';
+    body.innerHTML = `
+      <div class="detail-section">
+        <div class="grid2">
+          <div class="mini-stat"><div class="mini-stat-label">Body battery peak</div><div class="mini-stat-val" style="color:var(--lift)">${g0?.body_battery_max??'—'}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Body battery low</div><div class="mini-stat-val" style="color:var(--muted)">${g0?.body_battery_min??'—'}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Stress avg</div><div class="mini-stat-val">${g0?.stress_avg??'—'}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Respiration</div><div class="mini-stat-val">${g0?.respiration_avg??'—'}</div><div class="mini-stat-sub">br/min</div></div>
+        </div>
+      </div>`;
   }
+
+  if (type === 'heatmap') {
+    title.textContent = '2026 in Training';
+    const totalRuns = yearW.filter(w=>w.sport_type?.toLowerCase().includes('run')).length;
+    const totalSwims = yearW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).length;
+    const totalLifts = yearW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
+    body.innerHTML = `
+      <div class="detail-section">
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="mini-stat"><div class="mini-stat-label">Runs</div><div class="mini-stat-val" style="color:var(--run)">${totalRuns}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Swims</div><div class="mini-stat-val" style="color:var(--swim)">${totalSwims}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Lifts</div><div class="mini-stat-val" style="color:var(--lift)">${totalLifts}</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Active days</div><div class="mini-stat-val" style="color:var(--steps)">${new Set(yearW.map(w=>w.date)).size}</div></div>
+        </div>
+        ${buildHeatmap(yearW, true)}
+        <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+          <div class="stage-item"><div class="stage-dot" style="background:#d4845a"></div> Run</div>
+          <div class="stage-item"><div class="stage-dot" style="background:#6ab3a8"></div> Swim</div>
+          <div class="stage-item"><div class="stage-dot" style="background:#a8c47a"></div> Lift</div>
+          <div class="stage-item"><div class="stage-dot" style="background:#8a82c8"></div> Ride</div>
+          <div class="stage-item"><div class="stage-dot" style="background:#e8c060"></div> Triple day</div>
+        </div>
+      </div>`;
+  }
+
+  overlay.classList.add('open');
 }
 
-// Handle swipe down to close
-let touchStartY = 0;
-document.getElementById('detail-panel').addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
-document.getElementById('detail-panel').addEventListener('touchmove', e => {
-  if (document.getElementById('detail-panel').scrollTop === 0 && e.touches[0].clientY - touchStartY > 60) closeDetailBtn();
-}, { passive: true });
+function closeDetail(e) {
+  if (e.target === document.getElementById('overlay') || e.target.classList.contains('overlay-backdrop')) {
+    closeDetailBtn();
+  }
+}
+function closeDetailBtn() {
+  document.getElementById('overlay').classList.remove('open');
+  detailCharts.forEach(c => c.destroy());
+  detailCharts = [];
+}
 
+// ── BOOT ─────────────────────────────────────────────────────
+// FIX: Set date immediately and auto-load on page open
+document.getElementById('header-date').textContent = fmtDate(new Date());
 loadAll();
-setInterval(loadAll, 5 * 60 * 1000);
 </script>
+</body>
+</html>
 </body>
 </html>
