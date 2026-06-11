@@ -648,7 +648,7 @@ function renderSportsStrip(results) {
       subtitle = `${today.isHome?'vs':'@'} ${today.opp}`;
     } else if (next) {
       rightContent = `<div style="font-size:11px;font-weight:600;color:var(--ink)">${next.dateStr}</div><div style="font-size:10px;color:var(--ink3)">${next.timeStr}</div>`;
-      subtitle = `Next: ${next.isHome?'vs':'@'} ${next.opp}${last?` · Last: ${last.won?'W':'L'} ${last.ourScore}–${last.oppScore}`:''}`;
+      subtitle = `Next: ${next.isHome?'vs':'@'} ${next.opp}`;
     } else if (last) {
       rightContent = `<div style="font-size:12px;font-weight:700;color:${last.won?'#16A34A':'#DC2626'}">${last.won?'W':'L'} ${last.ourScore}–${last.oppScore}</div>`;
       subtitle = `${last.isHome?'vs':'@'} ${last.opp}`;
@@ -1062,8 +1062,6 @@ function openModal(type) {
 
       if (last) {
         html += `<div class="history-item">
-          <span class="history-date">Last game</span>
-          <span class="history-value" style="color:${last.won?'#16A34A':'#DC2626'}">${last.won?'W':'L'} ${last.ourScore}–${last.oppScore} ${last.isHome?'vs':'@'} ${last.opp}</span>
         </div>`;
       }
       if (next) {
