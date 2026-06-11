@@ -624,8 +624,8 @@ function openModal(type) {
   if (type==='plan') {
     const cw = getCurrentWeek();
     const dates = getWeekDates(cw);
-    const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     document.getElementById('plan-week-schedule').innerHTML = dates.map((date,i)=>{
+      const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
       const sessions = PLAN[date]||[];
       const isToday = date===td;
       const doneWorkouts = gWorkoutsWeek.filter(w=>w.date===date);
@@ -636,7 +636,7 @@ function openModal(type) {
       const detail = sessions.map(s=>s.d).join(' · ') || '';
       const allDone = sessions.length>0 && sessions.every(s=>doneWorkouts.some(w=>sportMatch(w.sport_type,s.t)));
       return `<div class="week-day ${isToday?'today-row':''}">
-        <div class="week-day-name">${isToday?'Today — ':''}${dayNames[i]} ${new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}${allDone?'<span class="week-done-check">✓</span>':''}</div>
+        <div class="week-day-name">${isToday?'Today — ':''}${dayName} ${new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}${allDone?'<span class="week-done-check">✓</span>':''}</div>
         <div class="week-sessions">${tags}</div>
         ${detail?`<div class="week-detail">${detail}</div>`:''}
       </div>`;
