@@ -211,6 +211,17 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   </div>
 </div>
 
+<!-- BAY AREA SPORTS -->
+<div id="sports-strip" onclick="openModal('sports')" style="margin:0 16px 10px;background:var(--card);border-radius:14px;padding:12px 16px;border:1px solid var(--rule);cursor:pointer">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3)">Bay Area Sports</div>
+    <div style="color:var(--ink3);font-size:14px">›</div>
+  </div>
+  <div id="sports-content" style="margin-top:8px">
+    <div style="font-size:12px;color:var(--ink3)">Loading...</div>
+  </div>
+</div>
+
 <div class="cards">
   <!-- SLEEP -->
   <div class="card" onclick="openModal('sleep')">
@@ -367,6 +378,13 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <div class="modal-title" id="plan-modal-title">Week 3 · Foundation</div>
   <div class="section-label">This Week</div>
   <div id="plan-week-schedule"></div>
+</div>
+
+<!-- SPORTS MODAL -->
+<div class="modal" id="modal-sports">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Bay Area Sports</div>
+  <div id="sports-modal-content"></div>
 </div>
 
 <!-- WEATHER MODAL -->
@@ -529,6 +547,130 @@ function barChart(containerId, data, color, fmt) {
 
 // GLOBAL DATA CACHE
 let gSleep=[], gActivity=[], gHR=[], gWorkoutsWeek=[], gWorkoutsToday=[];
+
+// SPORTS
+let gSports = {};
+
+const TEAMS = [
+  { name:'Giants', espnId:'26', league:'baseball', espnLeague:'mlb', color:'#FD5A1E', emoji:'⚾', months:[3,4,5,6,7,8,9] },
+  { name:'Warriors', espnId:'9', league:'basketball', espnLeague:'nba', color:'#1D428A', emoji:'🏀', months:[9,10,11,0,1,2,3,4,5] },
+  { name:'49ers', espnId:'25', league:'football', espnLeague:'nfl', color:'#AA0000', emoji:'🏈', months:[8,9,10,11,0,1] },
+  { name:'Sharks', espnId:'28', league:'hockey', espnLeague:'nhl', color:'#006D75', emoji:'🦈', months:[9,10,11,0,1,2,3] },
+];
+
+function isInSeason(team) {
+  return team.months.includes(new Date().getMonth());
+}
+
+async function fetchTeamData(team) {
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/${team.league}/${team.espnLeague}/teams/${team.espnId}/schedule?limit=10`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const events = data.events || [];
+    const td = todayStr();
+
+    // Find today's game, last result, next game
+    let todayGame = null, lastGame = null, nextGame = null;
+
+    for (const e of events) {
+      const gameDate = e.date?.slice(0,10);
+      const status = e.competitions?.[0]?.status?.type?.name;
+      if (gameDate === td && (status === 'STATUS_IN_PROGRESS' || status === 'STATUS_SCHEDULED' || status === 'STATUS_HALFTIME')) {
+        todayGame = e;
+      } else if (gameDate < td && (status === 'STATUS_FINAL' || status === 'STATUS_FINAL_OVERTIME')) {
+        if (!lastGame) lastGame = e;
+      } else if (gameDate > td && !nextGame) {
+        nextGame = e;
+      }
+    }
+
+    return { team, todayGame, lastGame, nextGame, events };
+  } catch(e) {
+    return { team, todayGame:null, lastGame:null, nextGame:null, events:[] };
+  }
+}
+
+function parseGame(event, teamEspnId) {
+  if (!event) return null;
+  const comp = event.competitions?.[0];
+  const home = comp?.competitors?.find(c=>c.homeAway==='home');
+  const away = comp?.competitors?.find(c=>c.homeAway==='away');
+  const isHome = home?.team?.id === teamEspnId;
+  const opp = isHome ? away : home;
+  const us = isHome ? home : away;
+  const status = comp?.status?.type;
+  const date = new Date(event.date);
+  const timeStr = date.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});
+  const dateStr = date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'America/Los_Angeles'});
+  return {
+    isHome, opp: opp?.team?.abbreviation||'?',
+    ourScore: us?.score||'', oppScore: opp?.score||'',
+    won: us?.winner===true,
+    statusName: status?.name, statusDetail: status?.detail||'',
+    live: status?.name==='STATUS_IN_PROGRESS'||status?.name==='STATUS_HALFTIME',
+    final: status?.name?.includes('FINAL'),
+    scheduled: status?.name==='STATUS_SCHEDULED',
+    timeStr, dateStr,
+  };
+}
+
+async function loadSports() {
+  const activeTeams = TEAMS.filter(isInSeason);
+  if (!activeTeams.length) {
+    document.getElementById('sports-content').innerHTML = '<div style="font-size:12px;color:var(--ink3)">Off-season for all Bay Area teams</div>';
+    return;
+  }
+
+  const results = await Promise.all(activeTeams.map(fetchTeamData));
+  gSports = results;
+  renderSportsStrip(results);
+}
+
+function renderSportsStrip(results) {
+  const html = results.map(r=>{
+    const t = r.team;
+    const today = parseGame(r.todayGame, t.espnId);
+    const last = parseGame(r.lastGame, t.espnId);
+    const next = parseGame(r.nextGame, t.espnId);
+
+    let rightContent = '';
+    let subtitle = '';
+
+    if (today?.live) {
+      rightContent = `<div style="font-size:14px;font-weight:700;color:${t.color}">${today.ourScore}–${today.oppScore}</div><div style="font-size:10px;color:#DC2626;font-weight:600;animation:pulse 1.5s infinite">● LIVE</div>`;
+      subtitle = `${today.isHome?'vs':'@'} ${today.opp} · ${today.statusDetail}`;
+    } else if (today?.final) {
+      rightContent = `<div style="font-size:12px;font-weight:700;color:${today.won?'#16A34A':'#DC2626'}">${today.won?'W':'L'} ${today.ourScore}–${today.oppScore}</div><div style="font-size:10px;color:var(--ink3)">Final</div>`;
+      subtitle = `${today.isHome?'vs':'@'} ${today.opp}`;
+    } else if (today?.scheduled) {
+      rightContent = `<div style="font-size:12px;font-weight:600;color:var(--ink)">${today.timeStr}</div><div style="font-size:10px;color:var(--ink3)">Today</div>`;
+      subtitle = `${today.isHome?'vs':'@'} ${today.opp}`;
+    } else if (next) {
+      rightContent = `<div style="font-size:11px;font-weight:600;color:var(--ink)">${next.dateStr}</div><div style="font-size:10px;color:var(--ink3)">${next.timeStr}</div>`;
+      subtitle = `Next: ${next.isHome?'vs':'@'} ${next.opp}${last?` · Last: ${last.won?'W':'L'} ${last.ourScore}–${last.oppScore}`:''}`;
+    } else if (last) {
+      rightContent = `<div style="font-size:12px;font-weight:700;color:${last.won?'#16A34A':'#DC2626'}">${last.won?'W':'L'} ${last.ourScore}–${last.oppScore}</div>`;
+      subtitle = `${last.isHome?'vs':'@'} ${last.opp}`;
+    }
+
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule)" class="sports-row">
+      <div style="font-size:20px">${t.emoji}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--ink)">${t.name}</div>
+        <div style="font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subtitle}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">${rightContent}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('sports-content').innerHTML = `<div style="margin-top:4px">${html}</div>`;
+
+  // Auto-refresh if any game is live
+  if (results.some(r=>parseGame(r.todayGame, r.team.espnId)?.live)) {
+    setTimeout(loadSports, 30000);
+  }
+}
 
 // WEATHER
 let gWeather = null;
@@ -694,6 +836,7 @@ async function loadAll() {
   const ws = weekStart();
 
   loadWeather();
+  loadSports();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
   document.getElementById('refresh-time').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 
@@ -738,7 +881,7 @@ async function loadAll() {
   const totalMiles = runs.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34;
   const totalSwim = Math.round(swims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
   document.getElementById('week-miles').textContent = totalMiles>0?totalMiles.toFixed(1):'0';
-  document.getElementById('week-swim').textContent = totalSwim>0?Math.round(totalSwim*1.09361):'0';
+  document.getElementById('week-swim').textContent = totalSwim>0?totalSwim:'0';
   document.getElementById('week-lifts').textContent = lifts.length;
 
   // TODAY PLAN
@@ -877,6 +1020,80 @@ function openModal(type) {
   }
 
   if (type==='sport') { /* handled by openSportDetail */ }
+
+  if (type==='sports') {
+    if (!gSports || !gSports.length) {
+      document.getElementById('sports-modal-content').innerHTML = '<p style="color:var(--ink3);font-size:13px">Loading...</p>';
+      return;
+    }
+    let html = '';
+    for (const r of gSports) {
+      const t = r.team;
+      const today = parseGame(r.todayGame, t.espnId);
+      const last = parseGame(r.lastGame, t.espnId);
+      const next = parseGame(r.nextGame, t.espnId);
+
+      html += `<div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:22px">${t.emoji}</span>
+          <span style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink)">${t.name}</span>
+        </div>`;
+
+      if (today?.live) {
+        html += `<div style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:12px;padding:14px;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:1px;margin-bottom:8px">● LIVE</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:13px;color:var(--ink)">${today.isHome?'SF':'@'+today.opp} vs ${today.isHome?today.opp:'SF'}</div>
+            <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${t.color}">${today.ourScore} – ${today.oppScore}</div>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px">${today.statusDetail}</div>
+        </div>`;
+      } else if (today) {
+        html += `<div style="background:var(--bg2);border-radius:12px;padding:14px;margin-bottom:10px">
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Today</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:13px;font-weight:500;color:var(--ink)">${today.isHome?'vs':'@'} ${today.opp}</div>
+            <div style="font-size:${today.final?'20':'14'}px;font-weight:700;color:${today.final?(today.won?'#16A34A':'#DC2626'):t.color}">
+              ${today.final?`${today.won?'W':'L'} ${today.ourScore}–${today.oppScore}`:today.timeStr}
+            </div>
+          </div>
+        </div>`;
+      }
+
+      if (last) {
+        html += `<div class="history-item">
+          <span class="history-date">Last game</span>
+          <span class="history-value" style="color:${last.won?'#16A34A':'#DC2626'}">${last.won?'W':'L'} ${last.ourScore}–${last.oppScore} ${last.isHome?'vs':'@'} ${last.opp}</span>
+        </div>`;
+      }
+      if (next) {
+        html += `<div class="history-item">
+          <span class="history-date">Next game</span>
+          <span class="history-value">${next.isHome?'vs':'@'} ${next.opp} · ${next.dateStr} ${next.timeStr}</span>
+        </div>`;
+      }
+
+      // Upcoming schedule
+      const upcoming = r.events?.filter(e=>{
+        const g = parseGame(e, t.espnId);
+        return g?.scheduled && e.date?.slice(0,10) > todayStr();
+      }).slice(0,5)||[];
+      if (upcoming.length) {
+        html += `<div class="section-label" style="margin-top:16px">Upcoming</div>`;
+        for (const e of upcoming) {
+          const g = parseGame(e, t.espnId);
+          if (!g) continue;
+          html += `<div class="history-item">
+            <span class="history-date">${g.dateStr}</span>
+            <span class="history-value">${g.isHome?'vs':'@'} ${g.opp} · ${g.timeStr}</span>
+          </div>`;
+        }
+      }
+
+      html += '</div>';
+    }
+    document.getElementById('sports-modal-content').innerHTML = html;
+  }
 
   if (type==='weather') {
     if (!gWeather) { document.getElementById('weather-today-detail').innerHTML = '<p style="color:var(--ink3)">Loading...</p>'; loadWeather(); return; }
@@ -1071,14 +1288,14 @@ async function openSportDetail(sportKey) {
     const wk = weekTotals[k];
     const lbl = new Date(k+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     let val;
-    if (isSwim) val = Math.round(wk.dist);
+    if (isSwim) val = Math.round(wk.dist*1.09361);
     else if (isLift) val = wk.count;
     else val = parseFloat((wk.dist/1609.34).toFixed(1));
     return {l:lbl, v:val};
   });
 
   const chartColor = colors[sportKey]||'#9896A8';
-  const chartUnit = isSwim?'m':isLift?'sessions':'mi';
+  const chartUnit = isSwim?'yds':isLift?'sessions':'mi';
 
   // Build HTML
   let html = `<div class="section-label">Weekly ${isLift?'Sessions':isSwim?'Volume (m)':'Volume (mi)'} — Last 6 Weeks</div>`;
@@ -1092,7 +1309,7 @@ async function openSportDetail(sportKey) {
     const pace = isRun&&w.distance_m>0&&w.duration_s>0
       ? (()=>{const spm=w.duration_s/(w.distance_m/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '';
     const swimPace = isSwim&&w.distance_m>0&&w.duration_s>0
-      ? (()=>{const spm=w.duration_s/(w.distance_m/100);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/100m';})() : '';
+      ? (()=>{const spm=w.duration_s/(w.distance_m*1.09361/100);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/100yds';})() : '';
     const meta = isRun?[dist,pace].filter(Boolean).join(' · '):isSwim?[dist,swimPace||dur].filter(Boolean).join(' · '):[dur].filter(Boolean).join('');
     html += `<div class="history-item">
       <div>
