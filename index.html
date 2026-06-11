@@ -736,7 +736,7 @@ async function loadAll() {
   const swims = gWorkoutsWeek.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
   const lifts = gWorkoutsWeek.filter(w=>sportMatch(w.sport_type,'lift'));
   const totalMiles = runs.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34;
-  const totalSwim = swims.reduce((s,w)=>s+(w.distance_m||0),0);
+  const totalSwim = Math.round(swims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
   document.getElementById('week-miles').textContent = totalMiles>0?totalMiles.toFixed(1):'0';
   document.getElementById('week-swim').textContent = totalSwim>0?Math.round(totalSwim*1.09361):'0';
   document.getElementById('week-lifts').textContent = lifts.length;
