@@ -195,6 +195,11 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
 </div>
 
+<!-- MORNING BRIEF -->
+<div id="morning-brief" style="margin:0 16px 10px;background:var(--ink);border-radius:14px;padding:14px 18px;min-height:52px">
+  <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:6px">Morning Brief</div>
+  <div id="brief-text" style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.5">Generating your brief...</div>
+</div>
 <!-- WEATHER STRIP -->
 <div id="weather-strip" onclick="openModal('weather')" style="margin:0 16px 10px;background:var(--card);border-radius:14px;padding:12px 16px;border:1px solid var(--rule);cursor:pointer;display:flex;align-items:center;justify-content:space-between">
   <div style="display:flex;align-items:center;gap:12px">
@@ -831,6 +836,28 @@ function renderReadinessCard(scores, workouts28) {
   setTimeout(()=>barChart('readiness-mini-chart', chartData, color), 50);
 }
 
+async function loadMorningBrief(data) {
+  const { sleep, hr, activity, scores, todayPlan, weekLabel } = data;
+  const sleepH = sleep ? Math.floor(sleep.duration_h)+'h '+Math.round((sleep.duration_h%1)*60)+'m' : 'unknown';
+  const hrv = hr?.hrv_ms ? Math.round(hr.hrv_ms)+'ms' : null;
+  const rhr = hr?.resting_hr ? hr.resting_hr+'bpm' : null;
+  const steps = activity?.steps ? Math.round(activity.steps).toLocaleString() : null;
+  const readiness = scores?.total;
+  const plan = todayPlan?.length ? todayPlan.map(s=>s.l+' ('+s.d+')').join(', ') : 'Rest day';
+  const prompt = `You are a concise personal health coach. Write a 2-sentence morning brief for Danny. Be direct and specific. Use actual numbers. No greetings.\n\nSleep: ${sleepH}\nResting HR: ${rhr||'n/a'}\nHRV: ${hrv||'n/a'}\nSteps: ${steps||'0'}\nReadiness: ${readiness||'?'}/100\nTraining: ${weekLabel}\nToday: ${plan}\n\nFirst sentence: recovery/readiness. Second sentence: guidance for today.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const d2 = await res.json();
+    document.getElementById('brief-text').textContent = d2.content?.[0]?.text || 'Brief unavailable.';
+  } catch(e) {
+    document.getElementById('brief-text').textContent = 'Brief unavailable.';
+  }
+}
+
 async function loadAll() {
   const td = todayStr();
   const ws = weekStart();
@@ -913,6 +940,11 @@ async function loadAll() {
   gHR28 = await q('heart_rate', `date=gte.${since28}&order=date.desc&limit=30`);
   const scores = calcReadiness(gWorkouts28, gSleep28, gHR28);
   renderReadinessCard(scores, gWorkouts28);
+  if (!window._briefLoaded) {
+    window._briefLoaded = true;
+    const cw = getCurrentWeek();
+    loadMorningBrief({ sleep: gSleep.find(r=>r.duration_h>0.5), hr: gHR[0], activity: gActivity.find(r=>r.date===todayStr()), scores, todayPlan: PLAN[todayStr()]||[], weekLabel: cw.label+' · '+cw.badge });
+  }
 }
 
 function openModal(type) {
