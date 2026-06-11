@@ -328,6 +328,109 @@ function buildTodayWorkoutCard() {
   return '';
 }
 
+// ── HEATMAP ───────────────────────────────────────────────────
+function buildHeatmap(yearW, expanded) {
+  // Build a map of date -> [sport_types]
+  const dayMap = {};
+  for (const w of yearW) {
+    if (!dayMap[w.date]) dayMap[w.date] = [];
+    dayMap[w.date].push(w.sport_type?.toLowerCase() || '');
+  }
+
+  function cellColor(types) {
+    if (!types || types.length === 0) return '#1e1c18';
+    // Priority: race > ride > run > swim > lift > walk
+    if (types.some(t=>t.includes('run')&&!t.includes('weight'))) {
+      const hasSwim = types.some(t=>t.includes('swim'));
+      const hasLift = types.some(t=>t.includes('weight')||t.includes('strength'));
+      if (hasSwim && hasLift) return '#e8c060'; // triple day
+      if (hasSwim || hasLift) return '#d4845a'; // double day
+      return '#d4845a';
+    }
+    if (types.some(t=>t.includes('swim'))) return '#6ab3a8';
+    if (types.some(t=>t.includes('weight')||t.includes('strength'))) return '#a8c47a';
+    if (types.some(t=>t.includes('ride')||t.includes('cycling'))) return '#8a82c8';
+    if (types.some(t=>t.includes('walk'))) return '#4a4540';
+    return '#3a3530';
+  }
+
+  function cellOpacity(types) {
+    if (!types || types.length === 0) return 0.3;
+    return 1;
+  }
+
+  // Generate all days of 2026
+  const start = new Date('2026-01-01');
+  const today = new Date();
+  const cells = [];
+  const d = new Date(start);
+
+  // Pad to start on Sunday
+  const startDow = start.getDay();
+  for (let i = 0; i < startDow; i++) cells.push(null);
+
+  while (d <= today) {
+    cells.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+
+  const cellSize = expanded ? 12 : 9;
+  const gap = expanded ? 2 : 1.5;
+  const weeks = Math.ceil(cells.length / 7);
+  const width = weeks * (cellSize + gap);
+  const height = 7 * (cellSize + gap);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Month labels
+  const monthLabels = [];
+  let lastMonth = -1;
+  for (let i = 0; i < cells.length; i++) {
+    if (!cells[i]) continue;
+    const mo = new Date(cells[i]).getMonth();
+    if (mo !== lastMonth) {
+      const col = Math.floor(i / 7);
+      monthLabels.push({ month: months[mo], x: col * (cellSize + gap) });
+      lastMonth = mo;
+    }
+  }
+
+  let svg = `<svg viewBox="0 0 ${width} ${height + (expanded?16:0)}" width="100%" style="overflow:visible">`;
+
+  if (expanded) {
+    for (const { month, x } of monthLabels) {
+      svg += `<text x="${x}" y="10" fill="#4a4540" font-size="8" font-family="'DM Mono',monospace">${month}</text>`;
+    }
+    svg += `<g transform="translate(0,14)">`;
+  }
+
+  for (let i = 0; i < cells.length; i++) {
+    const date = cells[i];
+    const col = Math.floor(i / 7);
+    const row = i % 7;
+    const x = col * (cellSize + gap);
+    const y = row * (cellSize + gap);
+
+    if (!date) {
+      svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="#1e1c18"/>`;
+      continue;
+    }
+
+    const types = dayMap[date];
+    const color = cellColor(types);
+    const opacity = cellOpacity(types);
+    const isToday = date === today.toISOString().slice(0,10);
+    const title = types?.length ? `${date}: ${types.join(', ')}` : date;
+
+    svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" opacity="${opacity}"${isToday?' stroke="#f0ebe3" stroke-width="1"':''}>
+      <title>${title}</title>
+    </rect>`;
+  }
+
+  if (expanded) svg += `</g>`;
+  svg += `</svg>`;
+  return svg;
+}
+
 // ── LOAD ALL DATA ─────────────────────────────────────────────
 async function loadAll() {
   const btn = document.getElementById('sync-btn');
@@ -339,7 +442,7 @@ async function loadAll() {
   const d90 = new Date(); d90.setDate(d90.getDate()-90);
 
   try {
-    const [sleep, hr, activity, body, recentW, weekW, garmin, sleep90, hr90, activity90] = await Promise.all([
+    const [sleep, hr, activity, body, recentW, weekW, garmin, sleep90, hr90, activity90, yearW] = await Promise.all([
       query('sleep','select=*&order=date.desc&limit=14'),
       query('heart_rate','select=*&order=date.desc&limit=30'),
       query('daily_activity','select=*&order=date.desc&limit=14'),
@@ -350,9 +453,10 @@ async function loadAll() {
       query('sleep',`select=*&date=gte.${d90.toISOString().slice(0,10)}&order=date.desc`),
       query('heart_rate',`select=*&date=gte.${d90.toISOString().slice(0,10)}&order=date.desc`),
       query('daily_activity',`select=*&date=gte.${d90.toISOString().slice(0,10)}&order=date.desc`),
+      query('workouts','select=date,sport_type,distance_m,relative_effort&date=gte.2026-01-01&order=date.asc'),
     ]);
 
-    DATA = { sleep, hr, activity, body, recentW, weekW, garmin, sleep90, hr90, activity90 };
+    DATA = { sleep, hr, activity, body, recentW, weekW, garmin, sleep90, hr90, activity90, yearW };
 
     const weekRun  = weekW.filter(w=>w.sport_type?.toLowerCase().includes('run')).reduce((a,b)=>a+(b.distance_m||0),0);
     const weekSwim = weekW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).reduce((a,b)=>a+(b.distance_m||0),0);
@@ -468,6 +572,18 @@ async function loadAll() {
         </div>
       </div>
     </div>`:''}
+    <!-- YEAR IN TRAINING HEATMAP -->
+    <div class="card tappable" onclick="openDetail('heatmap')">
+      <div class="card-label">2026 in training <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Strava</span><span class="card-chevron">›</span></span></div>
+      ${buildHeatmap(yearW, false)}
+      <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--muted)">
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#d4845a;margin-right:3px"></span>Run</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6ab3a8;margin-right:3px"></span>Swim</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#a8c47a;margin-right:3px"></span>Lift</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#8a82c8;margin-right:3px"></span>Ride</span>
+      </div>
+    </div>
+
     `;
 
     btn.textContent = '↻ Refresh'; btn.classList.remove('syncing');
@@ -541,7 +657,7 @@ Write ONE sentence (max 20 words) that gives Danny a genuinely useful, specific 
 function openDetail(type) {
   detailCharts.forEach(c=>c.destroy()); detailCharts=[];
   const panel = document.getElementById('detail-panel');
-  const titles = { sleep:'Sleep', movement:'Movement', heart:'Heart Rate & HRV', training:'Training', body:'Body', recovery:'Recovery', workout:"Today's Workout" };
+  const titles = { sleep:'Sleep', movement:'Movement', heart:'Heart Rate & HRV', training:'Training', body:'Body', recovery:'Recovery', workout:"Today's Workout", heatmap:'2026 in Training' };
   document.getElementById('detail-title').textContent = titles[type]||type;
   document.getElementById('detail-body').innerHTML = buildDetail(type);
   document.getElementById('overlay').classList.add('open');
@@ -860,6 +976,40 @@ function buildDetail(type) {
       </div>`).join('')}
     </div>`;
   }
+  if (type === 'heatmap') {
+    const { yearW } = DATA;
+    const totalRuns  = yearW.filter(w=>w.sport_type?.toLowerCase().includes('run')).length;
+    const totalSwims = yearW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).length;
+    const totalLifts = yearW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
+    const totalDays  = new Set(yearW.map(w=>w.date)).size;
+    const dayOfYear  = Math.floor((new Date() - new Date('2026-01-01')) / 86400000) + 1;
+    const pct        = Math.round((totalDays / dayOfYear) * 100);
+    return `
+    <div class="detail-section">
+      <div class="grid2">
+        <div class="mini-stat"><div class="mini-stat-label">Active days</div><div class="mini-stat-val" style="color:var(--steps)">${totalDays}</div><div class="mini-stat-sub">${pct}% of year so far</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Runs</div><div class="mini-stat-val" style="color:var(--run)">${totalRuns}</div><div class="mini-stat-sub">sessions</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Swims</div><div class="mini-stat-val" style="color:var(--swim)">${totalSwims}</div><div class="mini-stat-sub">sessions</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Lifts</div><div class="mini-stat-val" style="color:var(--lift)">${totalLifts}</div><div class="mini-stat-sub">sessions</div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Every day of 2026</div>
+      <div style="overflow-x:auto;padding-bottom:4px">${buildHeatmap(yearW, true)}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Legend</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#d4845a;flex-shrink:0"></span>Run</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#6ab3a8;flex-shrink:0"></span>Swim</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#a8c47a;flex-shrink:0"></span>Lift</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#8a82c8;flex-shrink:0"></span>Ride</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#e8c060;flex-shrink:0"></span>Triple day</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span style="width:12px;height:12px;border-radius:2px;background:#1e1c18;border:1px solid #3a3530;flex-shrink:0"></span>Rest</div>
+      </div>
+    </div>`;
+  }
+
   return '';
 }
 
