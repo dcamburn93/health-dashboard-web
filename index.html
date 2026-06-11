@@ -179,6 +179,155 @@ const sportClass = t => { if(!t) return 'ws-lift'; t=t.toLowerCase(); if(t.inclu
 const sportLabel = t => { if(!t) return 'LIFT'; return t.replace('WeightTraining','LIFT').replace('Run','RUN').replace('Swim','SWIM').replace('Ride','RIDE').replace('Walk','WALK').toUpperCase().slice(0,4); };
 const shortDate = d => { const dt = new Date(d+'T12:00:00'); return ['Su','Mo','Tu','We','Th','Fr','Sa'][dt.getDay()]+' '+dt.getDate(); };
 
+// ── WORKOUT PLAN ─────────────────────────────────────────────
+// Phase 1, Week 3, Mon=Upper A, Wed=Lower A, Fri=Full Body
+// Tue/Thu = run+swim, Sat = long run + optional swim, Sun = rest
+
+const PLAN = {
+  phase: 1, week: 3,
+  // phase start date — adjust if needed
+  phaseStart: '2026-06-02',
+
+  sessions: {
+    1: { // Monday
+      type: 'lift', label: 'Upper A', color: '#a8c47a', source: 'Phase 1 · Wk 3',
+      note: 'RPE 6–7 · ~45 min',
+      exercises: [
+        { name: 'Barbell bench press', sets: '3×10', weights: '135 / 135 / 135', note: 'Hold — consolidate before Ph.2' },
+        { name: 'Barbell row',         sets: '3×10', weights: '95 / 95 / 95',    note: 'Settled at top end' },
+        { name: 'Incline DB press',    sets: '3×12', weights: '90 / 90 / 90',    note: 'Hold — 12 reps clean' },
+        { name: 'Seated cable row',    sets: '3×12', weights: '115 / 115 / 115', note: '' },
+        { name: 'Lateral raises',      sets: '3×15', weights: '35 / 35 / 35',    note: 'Hold — form first' },
+        { name: 'Tricep pushdown',     sets: '3×12', weights: '95 / 95 / 95',    note: '' },
+        { name: 'Face pulls',          sets: '3×15', weights: '65 / 65 / 65',    note: 'Posture work' },
+      ],
+      cardio: { type: 'swim', label: 'Swim — easy aerobic', detail: '1,500–1,800m · 4×300 or 3×400 · ~1:15–1:20/100m' }
+    },
+    2: { // Tuesday
+      type: 'run+swim', label: 'Zone 2 Run + Swim', color: '#d4845a', source: 'Phase 1 · Wk 3',
+      note: 'All aerobic — RPE 6',
+      sessions: [
+        { type: 'run',  label: 'Zone 2 easy run',   detail: '30–35 min · HR 125–140 bpm · ~9:00–9:45/mi · cadence 170+ spm' },
+        { type: 'swim', label: 'Easy aerobic swim',  detail: '1,500–1,800m · 2×800m or 4×300 · 60s rest · very easy pace' },
+      ]
+    },
+    3: { // Wednesday
+      type: 'lift', label: 'Lower A', color: '#a8c47a', source: 'Phase 1 · Wk 3',
+      note: 'RPE 6–7 · ~45 min',
+      exercises: [
+        { name: 'Back squat',           sets: '3×10', weights: '45 / 95 / 95',    note: 'Deloaded — ease back in if back feels good' },
+        { name: 'Romanian deadlift',    sets: '3×10', weights: '95 / 135 / 135',  note: 'Strong progression — keep it going' },
+        { name: 'Leg press',            sets: '3×12', weights: '180 / 270 / 270', note: 'Lock in the top end' },
+        { name: 'Lying leg curl',       sets: '3×12', weights: 'N/A',             note: 'Skipped last week — reintroduce light if back allows' },
+        { name: 'Standing calf raise',  sets: '4×15', weights: 'N/A',             note: 'Skipped last week — reintroduce' },
+      ]
+    },
+    4: { // Thursday
+      type: 'run+swim', label: 'Zone 2 Run + Swim', color: '#d4845a', source: 'Phase 1 · Wk 3',
+      note: 'All aerobic — RPE 6',
+      sessions: [
+        { type: 'swim', label: 'Easy aerobic swim',  detail: '1,500–1,800m · same easy aerobic format as Tue' },
+        { type: 'run',  label: 'Zone 2 easy run',    detail: '30–35 min · HR 125–140 bpm · truly easy after swim' },
+      ]
+    },
+    5: { // Friday
+      type: 'lift', label: 'Full Body', color: '#a8c47a', source: 'Phase 1 · Wk 3',
+      note: 'RPE 6 · ~40 min · moderate load',
+      exercises: [
+        { name: 'Goblet squat',              sets: '3×10', weights: '35 / 35 / 35',    note: 'Or 95 lb back squat if feeling good' },
+        { name: 'DB bench press',            sets: '3×10', weights: '100 / 100 / 105', note: '' },
+        { name: 'Romanian deadlift',         sets: '3×10', weights: '125 / 125 / 125', note: 'Lighter than Lower A' },
+        { name: 'DB row (one arm)',          sets: '3×10', weights: '60 / 60 / 60',    note: 'per side' },
+        { name: 'Barbell hip thrust',        sets: '3×12', weights: '95 / 95 / 95',    note: 'Return to bar, no band needed' },
+        { name: 'Standing BB shoulder press',sets: '3×12', weights: '65 / 70 / 70',    note: '' },
+      ]
+    },
+    6: { // Saturday
+      type: 'run+swim', label: 'Long Run + Optional Swim', color: '#d4845a', source: 'Phase 1 · Wk 3',
+      note: 'Easy effort only',
+      sessions: [
+        { type: 'run',  label: 'Long easy run',     detail: '40–45 min · HR 125–140 bpm · same Z2 effort · this is your longest run of the week' },
+        { type: 'swim', label: 'Optional easy swim', detail: '1,000–1,200m · recovery pace · skip if fatigued' },
+      ]
+    },
+    0: { // Sunday
+      type: 'rest', label: 'Rest', color: '#4a4540', source: 'Phase 1 · Wk 3',
+      note: 'Full rest or easy walk',
+    }
+  }
+};
+
+function getTodaySession() {
+  const dow = new Date().getDay(); // 0=Sun, 1=Mon...
+  return PLAN.sessions[dow] || PLAN.sessions[0];
+}
+
+function buildTodayWorkoutCard() {
+  const s = getTodaySession();
+  const dow = new Date().getDay();
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  if (s.type === 'rest') {
+    return `<div class="card tappable" onclick="openDetail('workout')">
+      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Phase 1 · Wk 3</span><span class="card-chevron">›</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(74,69,64,0.3);display:flex;align-items:center;justify-content:center;font-size:18px">😴</div>
+        <div><div style="font-family:var(--serif);font-size:20px">Rest day</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div></div>
+      </div>
+    </div>`;
+  }
+
+  if (s.type === 'lift') {
+    const topExercises = s.exercises.slice(0, 3);
+    return `<div class="card tappable" onclick="openDetail('workout')">
+      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${s.source}</span><span class="card-chevron">›</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(168,196,122,0.15);display:flex;align-items:center;justify-content:center;font-size:18px">🏋️</div>
+        <div>
+          <div style="font-family:var(--serif);font-size:22px;color:var(--lift)">${s.label}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div>
+        </div>
+      </div>
+      ${topExercises.map(e=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px">${e.name}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${e.sets}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--lift);text-align:right">${e.weights}</div>
+      </div>`).join('')}
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px">+ ${s.exercises.length - 3} more exercises · tap for full workout</div>
+      ${s.cardio?`<div style="margin-top:10px;padding:8px 10px;background:rgba(106,179,168,0.08);border-radius:8px;border-left:2px solid var(--swim)">
+        <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--swim);margin-bottom:2px">Also today</div>
+        <div style="font-size:12px">${s.cardio.label}</div>
+        <div style="font-size:11px;color:var(--muted)">${s.cardio.detail}</div>
+      </div>`:''}
+    </div>`;
+  }
+
+  if (s.type === 'run+swim') {
+    return `<div class="card tappable" onclick="openDetail('workout')">
+      <div class="card-label">Today's workout <span style="display:flex;align-items:center;gap:6px"><span class="card-source">${s.source}</span><span class="card-chevron">›</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,132,90,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">🏃</div>
+        <div>
+          <div style="font-family:var(--serif);font-size:22px;color:var(--run)">${s.label}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.note}</div>
+        </div>
+      </div>
+      ${s.sessions.map((sess,i)=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${i<s.sessions.length-1?'border-bottom:1px solid var(--border)':''}">
+        <div style="width:28px;height:28px;border-radius:6px;background:${sess.type==='run'?'rgba(212,132,90,0.15)':'rgba(106,179,168,0.15)'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${sess.type==='run'?'🏃':'🏊'}</div>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:${sess.type==='run'?'var(--run)':'var(--swim)'}">${sess.label}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${sess.detail}</div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }
+  return '';
+}
+
 // ── LOAD ALL DATA ─────────────────────────────────────────────
 async function loadAll() {
   const btn = document.getElementById('sync-btn');
@@ -241,6 +390,9 @@ async function loadAll() {
         ${sleep.slice(0,7).reverse().map(s=>{const h=s.duration_h||0;const c=h>=8?'#8b7ec8':h>=7?'#6a5fa8':h>=6?'#4a3f88':'#2a2040';return`<div class="sleep-day-dot" style="background:${c}" title="${s.date}: ${h}h"></div>`;}).join('')}
       </div>
     </div>
+
+    <!-- TODAY'S WORKOUT CARD -->
+    ${buildTodayWorkoutCard()}
 
     <!-- MOVEMENT CARD -->
     <div class="card tappable" onclick="openDetail('movement')">
@@ -331,7 +483,7 @@ async function loadAll() {
 function openDetail(type) {
   detailCharts.forEach(c=>c.destroy()); detailCharts=[];
   const panel = document.getElementById('detail-panel');
-  const titles = { sleep:'Sleep', movement:'Movement', heart:'Heart Rate & HRV', training:'Training', body:'Body', recovery:'Recovery' };
+  const titles = { sleep:'Sleep', movement:'Movement', heart:'Heart Rate & HRV', training:'Training', body:'Body', recovery:'Recovery', workout:"Today's Workout" };
   document.getElementById('detail-title').textContent = titles[type]||type;
   document.getElementById('detail-body').innerHTML = buildDetail(type);
   document.getElementById('overlay').classList.add('open');
@@ -523,6 +675,109 @@ function buildDetail(type) {
         </div>`;
       }).join('')}
     </div>`;
+  }
+
+  if (type === 'workout') {
+    const s = getTodaySession();
+    const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const dow = new Date().getDay();
+
+    if (s.type === 'rest') {
+      return `<div class="detail-section">
+        <div style="text-align:center;padding:2rem 0">
+          <div style="font-size:48px;margin-bottom:12px">😴</div>
+          <div style="font-family:var(--serif);font-size:24px;margin-bottom:8px">Rest day</div>
+          <div style="font-size:13px;color:var(--muted)">${s.note}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--muted);line-height:1.7">
+          Recovery is where adaptation happens. Use today to sleep, eat well, and let last week's training sink in. A short walk is fine but keep the heart rate low.
+        </div>
+      </div>`;
+    }
+
+    if (s.type === 'lift') {
+      return `
+      <div class="detail-section">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="width:44px;height:44px;border-radius:10px;background:rgba(168,196,122,0.15);display:flex;align-items:center;justify-content:center;font-size:22px">🏋️</div>
+          <div>
+            <div style="font-family:var(--serif);font-size:26px;color:var(--lift)">${s.label}</div>
+            <div style="font-size:12px;color:var(--muted)">${s.note}</div>
+          </div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);margin-bottom:1.5rem">
+          Phase 1 · Week 3 · RPE 6–7 · Rest 60–90s between sets · Log weights as you go
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Exercises</div>
+        ${s.exercises.map((e,i)=>`
+        <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+            <div>
+              <div style="font-size:14px;font-weight:500">${e.name}</div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">${e.sets}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:var(--mono);font-size:12px;color:var(--lift)">${e.weights}</div>
+              <div style="font-size:10px;color:var(--muted2);margin-top:2px">lbs</div>
+            </div>
+          </div>
+          ${e.note?`<div style="font-size:11px;color:var(--muted2);margin-top:4px;font-style:italic">${e.note}</div>`:''}
+        </div>`).join('')}
+      </div>
+      ${s.cardio?`
+      <div class="detail-section">
+        <div class="detail-section-title">Also today — ${s.cardio.label}</div>
+        <div style="background:rgba(106,179,168,0.06);border-radius:10px;padding:14px;border-left:3px solid var(--swim)">
+          <div style="font-size:13px;color:var(--swim);margin-bottom:6px;font-weight:500">${s.cardio.label}</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7">${s.cardio.detail}</div>
+        </div>
+      </div>`:''}
+      <div class="detail-section">
+        <div class="detail-section-title">Week 4 preview</div>
+        <div style="background:var(--card2);border-radius:10px;padding:14px;font-size:12px;color:var(--muted);line-height:1.7">
+          Week 4 is a <strong style="color:var(--text)">deload week</strong> — drop volume by ~20%, keep the same exercises but reduce sets to 2×10. This is intentional. Don't skip it.
+        </div>
+      </div>`;
+    }
+
+    if (s.type === 'run+swim') {
+      return `
+      <div class="detail-section">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="width:44px;height:44px;border-radius:10px;background:rgba(212,132,90,0.12);display:flex;align-items:center;justify-content:center;font-size:22px">🏃</div>
+          <div>
+            <div style="font-family:var(--serif);font-size:26px;color:var(--run)">${s.label}</div>
+            <div style="font-size:12px;color:var(--muted)">${s.note}</div>
+          </div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);margin-bottom:1.5rem">
+          Phase 1 · Week 3 · All Zone 2 · No hard efforts this phase — fitness is building underneath
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Sessions</div>
+        ${s.sessions.map(sess=>`
+        <div style="padding:14px;background:${sess.type==='run'?'rgba(212,132,90,0.06)':'rgba(106,179,168,0.06)'};border-radius:10px;border-left:3px solid ${sess.type==='run'?'var(--run)':'var(--swim)'};margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:18px">${sess.type==='run'?'🏃':'🏊'}</span>
+            <span style="font-size:14px;font-weight:500;color:${sess.type==='run'?'var(--run)':'var(--swim)'}">${sess.label}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.8">${sess.detail.split(' · ').map(d=>`• ${d}`).join('<br>')}</div>
+        </div>`).join('')}
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Zone 2 guide</div>
+        <div style="background:var(--card2);border-radius:10px;padding:14px;font-size:12px;color:var(--muted);line-height:1.8">
+          <div style="margin-bottom:4px"><strong style="color:var(--text)">Heart rate:</strong> 125–140 bpm</div>
+          <div style="margin-bottom:4px"><strong style="color:var(--text)">Feel:</strong> Conversational — full sentences, nose breathing ok</div>
+          <div style="margin-bottom:4px"><strong style="color:var(--text)">Pace:</strong> ~9:00–9:45/mi based on your recent runs</div>
+          <div><strong style="color:var(--text)">Why:</strong> Zone 2 builds your aerobic base and fat-burning engine. The PRs you've been hitting lately are proof it's working.</div>
+        </div>
+      </div>`;
+    }
+    return '';
   }
 
   if (type === 'recovery') {
