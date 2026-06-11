@@ -572,16 +572,40 @@ async function loadAll() {
         </div>
       </div>
     </div>`:''}
-    <!-- YEAR IN TRAINING HEATMAP -->
+    <!-- YEAR IN TRAINING -->
     <div class="card tappable" onclick="openDetail('heatmap')">
       <div class="card-label">2026 in training <span style="display:flex;align-items:center;gap:6px"><span class="card-source">Strava</span><span class="card-chevron">›</span></span></div>
-      ${buildHeatmap(yearW, false)}
-      <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--muted)">
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#d4845a;margin-right:3px"></span>Run</span>
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6ab3a8;margin-right:3px"></span>Swim</span>
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#a8c47a;margin-right:3px"></span>Lift</span>
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#8a82c8;margin-right:3px"></span>Ride</span>
-      </div>
+      ${(()=>{
+        const totalRuns  = yearW.filter(w=>w.sport_type?.toLowerCase().includes('run')).length;
+        const totalSwims = yearW.filter(w=>w.sport_type?.toLowerCase().includes('swim')).length;
+        const totalLifts = yearW.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength')).length;
+        const totalDays  = new Set(yearW.map(w=>w.date)).size;
+        const dayOfYear  = Math.floor((new Date() - new Date('2026-01-01')) / 86400000) + 1;
+        const pct        = Math.round((totalDays / dayOfYear) * 100);
+        return `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:var(--card2);border-radius:10px;padding:12px">
+            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Active days</div>
+            <div style="font-family:var(--serif);font-size:28px;color:var(--steps)">${totalDays}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">${pct}% of year</div>
+          </div>
+          <div style="background:var(--card2);border-radius:10px;padding:12px">
+            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Runs</div>
+            <div style="font-family:var(--serif);font-size:28px;color:var(--run)">${totalRuns}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
+          </div>
+          <div style="background:var(--card2);border-radius:10px;padding:12px">
+            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Swims</div>
+            <div style="font-family:var(--serif);font-size:28px;color:var(--swim)">${totalSwims}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
+          </div>
+          <div style="background:var(--card2);border-radius:10px;padding:12px">
+            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Lifts</div>
+            <div style="font-family:var(--serif);font-size:28px;color:var(--lift)">${totalLifts}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">sessions</div>
+          </div>
+        </div>`;
+      })()}
     </div>
 
     `;
