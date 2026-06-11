@@ -195,6 +195,22 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
 </div>
 
+<!-- WEATHER STRIP -->
+<div id="weather-strip" onclick="openModal('weather')" style="margin:0 16px 10px;background:var(--card);border-radius:14px;padding:12px 16px;border:1px solid var(--rule);cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-size:24px" id="weather-icon">☀️</div>
+    <div>
+      <div style="font-size:22px;font-family:'DM Serif Display',serif;color:var(--ink);letter-spacing:-0.5px;line-height:1" id="weather-temp">—</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px" id="weather-desc">Walnut Creek</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Today's high</div>
+    <div style="font-size:16px;font-weight:600;color:var(--ink)" id="weather-high">—</div>
+    <div style="font-size:10px;color:var(--ink3);margin-top:2px" id="weather-run-tip"></div>
+  </div>
+</div>
+
 <div class="cards">
   <!-- SLEEP -->
   <div class="card" onclick="openModal('sleep')">
@@ -353,6 +369,16 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <div id="plan-week-schedule"></div>
 </div>
 
+<!-- WEATHER MODAL -->
+<div class="modal" id="modal-weather">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Weather</div>
+  <div style="font-size:12px;color:var(--ink3);margin-top:-14px;margin-bottom:20px">Walnut Creek, CA</div>
+  <div id="weather-today-detail"></div>
+  <div class="section-label" style="margin-top:24px">5-Day Forecast</div>
+  <div id="weather-forecast"></div>
+</div>
+
 <!-- READINESS MODAL -->
 <div class="modal" id="modal-readiness">
   <div class="modal-handle"></div>
@@ -504,6 +530,55 @@ function barChart(containerId, data, color, fmt) {
 // GLOBAL DATA CACHE
 let gSleep=[], gActivity=[], gHR=[], gWorkoutsWeek=[], gWorkoutsToday=[];
 
+// WEATHER
+let gWeather = null;
+
+function weatherIcon(condition, isDay=true) {
+  const c = (condition||'').toLowerCase();
+  if (c.includes('sunny')||c.includes('clear')) return isDay?'☀️':'🌙';
+  if (c.includes('cloud')||c.includes('overcast')) return '☁️';
+  if (c.includes('rain')||c.includes('drizzle')) return '🌧️';
+  if (c.includes('thunder')||c.includes('storm')) return '⛈️';
+  if (c.includes('snow')) return '❄️';
+  if (c.includes('fog')||c.includes('mist')) return '🌫️';
+  if (c.includes('wind')) return '💨';
+  return '🌤️';
+}
+
+function runTip(tempF, condition) {
+  const c = (condition||'').toLowerCase();
+  if (c.includes('rain')||c.includes('thunder')) return '🌧 Wet conditions — adjust pace';
+  if (tempF >= 95) return '🔥 Very hot — hydrate heavily';
+  if (tempF >= 85) return '☀️ Hot — early morning best';
+  if (tempF >= 75) return '🌡️ Warm — bring water';
+  if (tempF <= 45) return '🧤 Cold — layer up';
+  return '✓ Good running conditions';
+}
+
+async function loadWeather() {
+  try {
+    const res = await fetch('https://wttr.in/Walnut+Creek,CA?format=j1');
+    const data = await res.json();
+    const current = data.current_condition?.[0];
+    const days = data.weather||[];
+
+    gWeather = { current, days };
+
+    const tempF = Math.round(current.temp_F);
+    const desc = current.weatherDesc?.[0]?.value || '';
+    const icon = weatherIcon(desc, true);
+    const high = Math.round(days[0]?.maxtempF||tempF);
+
+    document.getElementById('weather-icon').textContent = icon;
+    document.getElementById('weather-temp').textContent = tempF + '°F';
+    document.getElementById('weather-desc').textContent = desc;
+    document.getElementById('weather-high').textContent = high + '°F';
+    document.getElementById('weather-run-tip').textContent = runTip(high, desc);
+  } catch(e) {
+    document.getElementById('weather-desc').textContent = 'Weather unavailable';
+  }
+}
+
 // READINESS SCORING
 let gWorkouts28 = [];
 let gSleep28 = [];
@@ -618,6 +693,7 @@ async function loadAll() {
   const td = todayStr();
   const ws = weekStart();
 
+  loadWeather();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
   document.getElementById('refresh-time').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 
@@ -801,6 +877,78 @@ function openModal(type) {
   }
 
   if (type==='sport') { /* handled by openSportDetail */ }
+
+  if (type==='weather') {
+    if (!gWeather) { document.getElementById('weather-today-detail').innerHTML = '<p style="color:var(--ink3)">Loading...</p>'; loadWeather(); return; }
+    const current = gWeather.current;
+    const days = gWeather.days;
+    const tempF = Math.round(current.temp_F);
+    const feelsF = Math.round(current.FeelsLikeF);
+    const humidity = current.humidity;
+    const wind = Math.round(current.windspeedMiles);
+    const desc = current.weatherDesc?.[0]?.value||'';
+    const icon = weatherIcon(desc, true);
+
+    // Hourly forecast for today
+    const hourly = days[0]?.hourly||[];
+    document.getElementById('weather-today-detail').innerHTML = `
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div style="font-size:48px">${icon}</div>
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:48px;color:var(--ink);letter-spacing:-1px;line-height:1">${tempF}°</div>
+          <div style="font-size:13px;color:var(--ink3)">${desc}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+        <div style="background:var(--bg2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:600;color:var(--ink)">${feelsF}°</div>
+          <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Feels like</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:600;color:var(--ink)">${humidity}%</div>
+          <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Humidity</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:600;color:var(--ink)">${wind}mph</div>
+          <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Wind</div>
+        </div>
+      </div>
+      <div style="background:var(--bg2);border-radius:10px;padding:10px 14px;margin-bottom:4px">
+        <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Run tip</div>
+        <div style="font-size:13px;color:var(--ink)">${runTip(Math.round(days[0]?.maxtempF||tempF), desc)}</div>
+      </div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding:12px 0">
+        ${hourly.map(h=>{
+          const hr = parseInt(h.time)/100;
+          const label = hr===0?'12am':hr<12?hr+'am':hr===12?'12pm':(hr-12)+'pm';
+          const t = Math.round(h.tempF);
+          const ic = weatherIcon(h.weatherDesc?.[0]?.value||'', hr>=6&&hr<20);
+          return `<div style="flex-shrink:0;text-align:center;min-width:48px">
+            <div style="font-size:10px;color:var(--ink3);margin-bottom:4px">${label}</div>
+            <div style="font-size:18px">${ic}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);margin-top:4px">${t}°</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+
+    // 5-day forecast
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    document.getElementById('weather-forecast').innerHTML = days.map((d,i)=>{
+      const date = new Date(d.date);
+      const name = i===0?'Today':dayNames[date.getDay()];
+      const high = Math.round(d.maxtempF);
+      const low = Math.round(d.mintempF);
+      const desc2 = d.hourly?.[4]?.weatherDesc?.[0]?.value||'';
+      const ic2 = weatherIcon(desc2, true);
+      const rain = d.hourly?.reduce((s,h)=>s+parseInt(h.chanceofrain||0),0)/Math.max(d.hourly?.length,1);
+      return `<div class="history-item">
+        <div style="width:48px;font-size:13px;font-weight:500;color:var(--ink)">${name}</div>
+        <div style="font-size:20px;margin:0 12px">${ic2}</div>
+        <div style="flex:1;font-size:12px;color:var(--ink3)">${desc2}${rain>20?' · '+Math.round(rain)+'% rain':''}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink)">${high}° <span style="color:var(--ink3);font-weight:400">${low}°</span></div>
+      </div>`;
+    }).join('');
+  }
 
   if (type==='readiness') {
     const scores = calcReadiness(gWorkouts28, gSleep28, gHR28);
