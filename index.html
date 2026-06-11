@@ -365,15 +365,6 @@ async function loadAll() {
 
     document.getElementById('cards').innerHTML = `
 
-    <!-- DAILY INSIGHT CARD -->
-    <div class="card" id="insight-card" style="background:linear-gradient(135deg,rgba(139,126,200,0.12) 0%,rgba(90,180,212,0.08) 100%);border-color:rgba(139,126,200,0.2)">
-      <div class="card-label">Daily insight <span class="card-source">Claude AI</span></div>
-      <div id="insight-text" style="font-family:var(--serif);font-size:17px;line-height:1.5;color:var(--text);min-height:44px">
-        <span style="color:var(--muted2);font-family:var(--sans);font-size:13px;font-style:italic">Analyzing your data...</span>
-      </div>
-      <div id="insight-meta" style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:8px"></div>
-    </div>
-
     <!-- TODAY'S WORKOUT CARD -->
     ${buildTodayWorkoutCard()}
 
@@ -485,9 +476,6 @@ async function loadAll() {
     btn.textContent = '↻ Refresh'; btn.classList.remove('syncing');
     document.getElementById('last-sync').textContent = 'updated ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 
-    // Generate AI insight async (doesn't block render)
-    generateInsight({ s0, h0, a0, b0, g0, sleep, hr, weekW, avgHRV, avgSleep });
-
   } catch(err) {
     console.error(err);
     document.getElementById('cards').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
@@ -536,17 +524,13 @@ Training context: ${ctx.phase}
 Write ONE sentence (max 20 words) that gives Danny a genuinely useful, specific insight about his data today. Be direct and personal. Don't start with "Today" or his name. Focus on the most interesting pattern or actionable observation. Examples of good insights: "HRV is 12% above your baseline — good day to push the Lower A weights." or "Three nights under 7h this week — prioritize an early bedtime tonight." or "Body battery recovered to 81 after yesterday's rest — you're primed for today's lift."`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/insight', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 100,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ prompt })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text?.trim();
+    const text = data.insight?.trim();
     if (text && el) {
       el.textContent = text;
       meta.textContent = `Generated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · based on today's data`;
