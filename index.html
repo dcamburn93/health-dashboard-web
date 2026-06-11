@@ -853,7 +853,7 @@ async function loadAll() {
   const lastSleep = gSleep.find(r=>r.duration_h>0.5);
   if (lastSleep) {
     document.getElementById('sleep-val').textContent = fmtH(lastSleep.duration_h);
-    document.getElementById('sleep-sub').textContent = lastSleep.date===td?'tonight so far':'last night';
+    document.getElementById('sleep-sub').textContent = 'last night';
   }
 
   // ACTIVITY
