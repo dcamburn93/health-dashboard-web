@@ -271,6 +271,27 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
     </div>
     <div class="today-view-week">Tap to see full week →</div>
   </div>
+
+  <!-- READINESS -->
+  <div class="card" onclick="openModal('readiness')" style="background:var(--ink);border-color:transparent">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div class="card-label" style="color:rgba(255,255,255,0.4)">Readiness</div>
+      <div class="card-chevron" style="color:rgba(255,255,255,0.3)">›</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;margin-top:4px">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:56px;color:#fff;letter-spacing:-2px;line-height:1" id="readiness-score">—</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px" id="readiness-label">calculating...</div>
+      </div>
+      <div style="flex:1">
+        <div id="readiness-factors"></div>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px">28-Day Training Load</div>
+      <div class="bar-chart" id="readiness-mini-chart" style="height:48px;margin:0"></div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL OVERLAY -->
@@ -330,6 +351,23 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <div class="modal-title" id="plan-modal-title">Week 3 · Foundation</div>
   <div class="section-label">This Week</div>
   <div id="plan-week-schedule"></div>
+</div>
+
+<!-- READINESS MODAL -->
+<div class="modal" id="modal-readiness">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Readiness</div>
+  <div style="display:flex;align-items:center;gap:24px;margin-bottom:24px">
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:72px;color:var(--ink);letter-spacing:-3px;line-height:1" id="readiness-score-big">—</div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:6px" id="readiness-label-big"></div>
+    </div>
+    <div style="flex:1" id="readiness-gauge"></div>
+  </div>
+  <div id="readiness-breakdown"></div>
+  <div class="section-label" style="margin-top:24px">28-Day Training Load</div>
+  <div class="bar-chart" id="readiness-load-chart" style="height:80px;margin-top:12px"></div>
+  <div style="font-size:11px;color:var(--ink3);margin-top:8px;text-align:center">Minutes of training per day</div>
 </div>
 
 <script>
@@ -466,6 +504,116 @@ function barChart(containerId, data, color, fmt) {
 // GLOBAL DATA CACHE
 let gSleep=[], gActivity=[], gHR=[], gWorkoutsWeek=[], gWorkoutsToday=[];
 
+// READINESS SCORING
+let gWorkouts28 = [];
+let gSleep28 = [];
+let gHR28 = [];
+
+function calcReadiness(workouts28, sleep14, hr14) {
+  const td = todayStr();
+
+  // HRV score (40%) — today vs 7-day baseline
+  let hrvScore = 50; // neutral default
+  const recentHRV = hr14.filter(r=>r.hrv_ms).slice(0,8);
+  const todayHRV = hr14.find(r=>r.date===td||r.date===yesterday());
+  if (recentHRV.length >= 3 && todayHRV?.hrv_ms) {
+    const baseline = recentHRV.slice(1,8).reduce((s,r)=>s+r.hrv_ms,0)/Math.max(recentHRV.slice(1,8).length,1);
+    const ratio = todayHRV.hrv_ms / baseline;
+    hrvScore = Math.min(100, Math.max(0, 50 + (ratio - 1) * 150));
+  }
+
+  // Sleep score (30%) — last night
+  let sleepScore = 50;
+  const lastSleep = sleep14.find(r=>r.duration_h>0.5);
+  if (lastSleep) {
+    const h = lastSleep.duration_h;
+    if (h >= 8) sleepScore = 100;
+    else if (h >= 7.5) sleepScore = 90;
+    else if (h >= 7) sleepScore = 78;
+    else if (h >= 6.5) sleepScore = 65;
+    else if (h >= 6) sleepScore = 50;
+    else if (h >= 5.5) sleepScore = 35;
+    else sleepScore = 20;
+  }
+
+  // Training load score (30%) — 7-day vs 28-day baseline
+  let loadScore = 70; // default — assume reasonable
+  const now = new Date();
+  const d7ago = new Date(); d7ago.setDate(now.getDate()-7);
+  const d28ago = new Date(); d28ago.setDate(now.getDate()-28);
+  const recent7 = workouts28.filter(w=>new Date(w.date)>=d7ago);
+  const all28 = workouts28;
+  const load7 = recent7.reduce((s,w)=>s+(w.duration_s||0),0)/60;
+  const load28avg = (all28.reduce((s,w)=>s+(w.duration_s||0),0)/60)/4; // weekly avg
+  if (load28avg > 0) {
+    const ratio = load7 / load28avg;
+    if (ratio < 0.5) loadScore = 85; // well rested
+    else if (ratio < 0.8) loadScore = 78;
+    else if (ratio < 1.1) loadScore = 72;
+    else if (ratio < 1.4) loadScore = 60;
+    else if (ratio < 1.8) loadScore = 45;
+    else loadScore = 30; // overreaching
+  }
+
+  const total = Math.round(hrvScore*0.4 + sleepScore*0.3 + loadScore*0.3);
+  return { total, hrvScore: Math.round(hrvScore), sleepScore: Math.round(sleepScore), loadScore: Math.round(loadScore) };
+}
+
+function yesterday() {
+  const d = new Date(); d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+
+function scoreColor(s) {
+  if (s >= 80) return '#4ADE80';
+  if (s >= 65) return '#FCD34D';
+  if (s >= 50) return '#FB923C';
+  return '#F87171';
+}
+
+function scoreLabel(s) {
+  if (s >= 85) return 'Excellent — ready to push';
+  if (s >= 75) return 'Good — solid day ahead';
+  if (s >= 65) return 'Moderate — listen to your body';
+  if (s >= 50) return 'Low — consider easy effort';
+  return 'Poor — prioritize recovery';
+}
+
+function renderReadinessCard(scores, workouts28) {
+  const color = scoreColor(scores.total);
+  document.getElementById('readiness-score').textContent = scores.total;
+  document.getElementById('readiness-label').textContent = scoreLabel(scores.total);
+
+  // Mini factors
+  document.getElementById('readiness-factors').innerHTML = [
+    {label:'HRV', score:scores.hrvScore, weight:'40%'},
+    {label:'Sleep', score:scores.sleepScore, weight:'30%'},
+    {label:'Load', score:scores.loadScore, weight:'30%'},
+  ].map(f=>`
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:0.8px">${f.label}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.5)">${f.score}</span>
+      </div>
+      <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px">
+        <div style="height:3px;width:${f.score}%;background:${scoreColor(f.score)};border-radius:2px;transition:width 0.5s"></div>
+      </div>
+    </div>`).join('');
+
+  // Mini 28-day chart
+  const days28 = [...Array(28)].map((_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-27+i);
+    return d.toISOString().slice(0,10);
+  });
+  const chartData = days28.map(date=>{
+    const dayWorkouts = workouts28.filter(w=>w.date===date);
+    const mins = Math.round(dayWorkouts.reduce((s,w)=>s+(w.duration_s||0),0)/60);
+    const d = new Date(date+'T12:00:00');
+    return {l:d.getDate()===1||d.getDay()===1?d.toLocaleDateString('en-US',{month:'short',day:'numeric'}):'', v:mins};
+  });
+  setTimeout(()=>barChart('readiness-mini-chart', chartData, color), 50);
+}
+
 async function loadAll() {
   const td = todayStr();
   const ws = weekStart();
@@ -537,6 +685,15 @@ async function loadAll() {
       </div>`;
     }).join('');
   }
+
+  // READINESS — fetch 28 days of workouts + sleep + HR
+  const d28ago = new Date(); d28ago.setDate(d28ago.getDate()-28);
+  const since28 = d28ago.toISOString().slice(0,10);
+  gWorkouts28 = await q('workouts', `date=gte.${since28}&order=date.desc&limit=100`);
+  gSleep28 = await q('sleep', `date=gte.${since28}&order=date.desc&limit=30`);
+  gHR28 = await q('heart_rate', `date=gte.${since28}&order=date.desc&limit=30`);
+  const scores = calcReadiness(gWorkouts28, gSleep28, gHR28);
+  renderReadinessCard(scores, gWorkouts28);
 }
 
 function openModal(type) {
@@ -644,6 +801,60 @@ function openModal(type) {
   }
 
   if (type==='sport') { /* handled by openSportDetail */ }
+
+  if (type==='readiness') {
+    const scores = calcReadiness(gWorkouts28, gSleep28, gHR28);
+    const color = scoreColor(scores.total);
+    document.getElementById('readiness-score-big').textContent = scores.total;
+    document.getElementById('readiness-score-big').style.color = color;
+    document.getElementById('readiness-label-big').textContent = scoreLabel(scores.total);
+
+    // Gauge arc
+    const pct = scores.total/100;
+    const r=50, cx=60, cy=60, circ=Math.PI*r;
+    const dash = pct*circ;
+    document.getElementById('readiness-gauge').innerHTML = `
+      <svg viewBox="0 0 120 70" style="width:100%;max-width:140px">
+        <path d="M10,60 A50,50 0 0,1 110,60" fill="none" stroke="var(--bg2)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M10,60 A50,50 0 0,1 110,60" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"
+          stroke-dasharray="${dash} ${circ}" style="transition:stroke-dasharray 0.6s"/>
+      </svg>`;
+
+    // Breakdown
+    const factors = [
+      {label:'HRV', score:scores.hrvScore, weight:'40%', desc:'Today vs 7-day baseline'},
+      {label:'Sleep', score:scores.sleepScore, weight:'30%', desc:'Last night quality'},
+      {label:'Training Load', score:scores.loadScore, weight:'30%', desc:'7-day vs 4-week avg'},
+    ];
+    document.getElementById('readiness-breakdown').innerHTML = factors.map(f=>`
+      <div style="padding:14px 0;border-bottom:1px solid var(--rule)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div>
+            <span style="font-size:13px;font-weight:600;color:var(--ink)">${f.label}</span>
+            <span style="font-size:11px;color:var(--ink3);margin-left:6px">${f.weight} weight</span>
+          </div>
+          <span style="font-family:'DM Serif Display',serif;font-size:22px;color:${scoreColor(f.score)}">${f.score}</span>
+        </div>
+        <div style="height:4px;background:var(--bg2);border-radius:2px;overflow:hidden">
+          <div style="height:4px;width:${f.score}%;background:${scoreColor(f.score)};border-radius:2px;transition:width 0.5s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:4px">${f.desc}</div>
+      </div>`).join('');
+
+    // 28-day load chart
+    const days28 = [...Array(28)].map((_,i)=>{
+      const d=new Date(); d.setDate(d.getDate()-27+i);
+      return d.toISOString().slice(0,10);
+    });
+    const chartData = days28.map(date=>{
+      const dayW = gWorkouts28.filter(w=>w.date===date);
+      const mins = Math.round(dayW.reduce((s,w)=>s+(w.duration_s||0),0)/60);
+      const d = new Date(date+'T12:00:00');
+      const isMonday = d.getDay()===1;
+      return {l:isMonday?d.toLocaleDateString('en-US',{month:'short',day:'numeric'}):'', v:mins};
+    });
+    setTimeout(()=>barChart('readiness-load-chart', chartData, color), 50);
+  }
 
   if (type==='plan') {
     const cw = getCurrentWeek();
