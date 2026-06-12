@@ -434,6 +434,12 @@ function weekStart() {
 function fmtDate(str) {
   return toDate(str).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
+function weekStart() {
+  const d = new Date(); const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const m = new Date(d.setDate(diff));
+  return m.toISOString().slice(0,10);
+}
 function fmtH(h) {
   if (!h) return '—';
   return `${Math.floor(h)}h ${Math.round((h%1)*60)}m`;
@@ -1411,15 +1417,6 @@ async function openSportDetail(sportKey) {
     const avgDur = totalSessions ? Math.round(totalMins/totalSessions) : 0;
     const thisWeekLifts = filtered.filter(w=>w.date>=weekStart()).length;
 
-    // Lift progression data from Google Sheet (Phase 1, Weeks 1-4)
-    const LIFT_PROGRESS = {
-      'Bench Press': {weeks:['Wk 1','Wk 2','Wk 3','Wk 4'], weights:[115,135,135,null], sets:'3x10'},
-      'Back Squat':  {weeks:['Wk 1','Wk 2','Wk 3','Wk 4'], weights:[95,105,95,null], sets:'3x10'},
-      'RDL':         {weeks:['Wk 1','Wk 2','Wk 3','Wk 4'], weights:[95,115,135,null], sets:'3x10'},
-      'DB Bench':    {weeks:['Wk 1','Wk 2','Wk 3','Wk 4'], weights:[100,100,110,null], sets:'3x10'},
-      'Barbell Row': {weeks:['Wk 1','Wk 2','Wk 3','Wk 4'], weights:[85,95,95,null], sets:'3x10'},
-    };
-
     html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
       <div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:center">
         <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${color}">${thisWeekLifts}</div>
@@ -1435,11 +1432,7 @@ async function openSportDetail(sportKey) {
       </div>
     </div>`;
 
-    // Progression charts
-    html += `<div class="section-label">Lift Progression — Working Weight (lbs)</div>`;
-    html += `<div id="lift-progression-charts"></div>`;
-
-    html += `<div class="section-label" style="margin-top:20px">Recent Sessions</div>`;
+    html += `<div class="section-label">Recent Sessions</div>`;
     for (const w of filtered.slice(0,8)) {
       const dur = Math.round(w.duration_s/60)+' min';
       const hr = w.avg_hr ? Math.round(w.avg_hr)+' bpm' : '';
@@ -1454,34 +1447,20 @@ async function openSportDetail(sportKey) {
     }
 
     document.getElementById('sport-detail-content').innerHTML = html;
-
-    // Render progression mini-charts for each lift
-    const liftChartsEl = document.getElementById('lift-progression-charts');
-    liftChartsEl.innerHTML = Object.entries(LIFT_PROGRESS).map(([name, data])=>{
-      const maxW = Math.max(...data.weights.filter(Boolean));
-      const minW = Math.min(...data.weights.filter(Boolean));
-      const lastW = data.weights.filter(Boolean).slice(-1)[0];
-      const firstW = data.weights.filter(Boolean)[0];
-      const gained = lastW - firstW;
-      const trend = gained > 0 ? `<span style="color:#16A34A">+${gained} lbs ▲</span>` : gained < 0 ? `<span style="color:#DC2626">${gained} lbs ▼</span>` : '<span style="color:var(--ink3)">—</span>';
-      const bars = data.weights.map((w,i)=>{
-        const h = w ? Math.max(8, ((w-minW*0.9)/(maxW*1.05-minW*0.9))*52) : 0;
-        const isNull = w===null;
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-          <div style="font-size:9px;color:var(--ink3)">${w||''}</div>
-          <div style="width:100%;border-radius:3px 3px 0 0;height:${h}px;background:${isNull?'var(--bg2)':color};opacity:${isNull?0.3:0.9}"></div>
-          <div style="font-size:9px;color:var(--ink3)">${data.weeks[i]}</div>
-        </div>`;
-      }).join('');
-      return `<div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
-          <div style="font-size:13px;font-weight:600;color:var(--ink)">${name} <span style="font-size:11px;color:var(--ink3);font-weight:400">${data.sets}</span></div>
-          <div style="font-size:12px">${trend}</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:flex-end;height:68px">${bars}</div>
-      </div>`;
-    }).join('');
+    const weekTotals2 = {};
+    for (const w of filtered) {
+      const d2 = new Date(w.date+'T12:00:00');
+      const day = d2.getDay();
+      const diff = d2.getDate()-day+(day===0?-6:1);
+      const wk = new Date(d2); wk.setDate(diff);
+      const wkStr = wk.toISOString().slice(0,10);
+      weekTotals2[wkStr] = (weekTotals2[wkStr]||0)+1;
+    }
+    const wkKeys2 = Object.keys(weekTotals2).sort().slice(-6);
+    const liftChartData = wkKeys2.map(k=>({l:new Date(k+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}),v:weekTotals2[k]}));
+    setTimeout(()=>barChart('sport-bar-chart', liftChartData, color, v=>v+' sessions'), 50);
   }
+}
 }
 
 function closeModal() {
