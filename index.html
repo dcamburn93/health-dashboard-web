@@ -434,12 +434,6 @@ function weekStart() {
 function fmtDate(str) {
   return toDate(str).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
-function weekStart() {
-  const d = new Date(); const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const m = new Date(d.setDate(diff));
-  return m.toISOString().slice(0,10);
-}
 function fmtH(h) {
   if (!h) return '—';
   return `${Math.floor(h)}h ${Math.round((h%1)*60)}m`;
@@ -859,7 +853,7 @@ async function loadAll() {
   const lastSleep = gSleep.find(r=>r.duration_h>0.5);
   if (lastSleep) {
     document.getElementById('sleep-val').textContent = fmtH(lastSleep.duration_h);
-    document.getElementById('sleep-sub').textContent = 'last night';
+    document.getElementById('sleep-sub').textContent = lastSleep.date===td?'tonight so far':'last night';
   }
 
   // ACTIVITY
@@ -919,11 +913,6 @@ async function loadAll() {
   gHR28 = await q('heart_rate', `date=gte.${since28}&order=date.desc&limit=30`);
   const scores = calcReadiness(gWorkouts28, gSleep28, gHR28);
   renderReadinessCard(scores, gWorkouts28);
-  if (!window._briefLoaded) {
-    window._briefLoaded = true;
-    const cw = getCurrentWeek();
-    loadMorningBrief({ sleep: gSleep.find(r=>r.duration_h>0.5), hr: gHR[0], activity: gActivity.find(r=>r.date===todayStr()), scores, todayPlan: PLAN[todayStr()]||[], weekLabel: cw.label+' · '+cw.badge });
-  }
 }
 
 function openModal(type) {
@@ -1257,209 +1246,80 @@ async function openSportDetail(sportKey) {
   document.getElementById('overlay').classList.add('open');
   document.querySelectorAll('.modal').forEach(m=>m.classList.remove('open'));
   document.getElementById('modal-sport').classList.add('open');
-  document.getElementById('sport-detail-content').innerHTML = '<div style="color:var(--ink3);font-size:13px;padding:20px 0">Loading...</div>';
 
   const labels = {run:'Running',swim:'Swimming',lift:'Lifting',bike:'Cycling'};
   const colors = {run:'#D97706',swim:'#0EA5A0',lift:'#3B6FE8',bike:'#7C3AED'};
-  const color = colors[sportKey]||'#9896A8';
   document.getElementById('sport-modal-title').textContent = labels[sportKey]||sportKey;
 
+  // Fetch last 8 weeks of this sport
   const eightWeeksAgo = new Date(); eightWeeksAgo.setDate(eightWeeksAgo.getDate()-56);
   const since = eightWeeksAgo.toISOString().slice(0,10);
-  const allWorkouts = await q('workouts', `date=gte.${since}&order=date.desc&limit=60`);
+  const allWorkouts = await q('workouts', `date=gte.${since}&order=date.desc&limit=50`);
 
   let filtered;
-  if (sportKey==='run') filtered = allWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('run') && w.distance_m>100);
-  else if (sportKey==='swim') filtered = allWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('swim') && w.distance_m>100);
+  if (sportKey==='run') filtered = allWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('run'));
+  else if (sportKey==='swim') filtered = allWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
   else if (sportKey==='lift') filtered = allWorkouts.filter(w=>sportMatch(w.sport_type,'lift'));
-  else if (sportKey==='bike') filtered = allWorkouts.filter(w=>sportMatch(w.sport_type,'bike') && w.distance_m>100);
+  else if (sportKey==='bike') filtered = allWorkouts.filter(w=>sportMatch(w.sport_type,'bike'));
   else filtered = [];
 
   const isSwim = sportKey==='swim';
   const isLift = sportKey==='lift';
   const isRun = sportKey==='run';
 
-  // Pace calculation helpers
-  function swimPacePer100(w) {
-    if (!w.distance_m||!w.duration_s) return null;
-    const yds = w.distance_m*1.09361;
-    const secPer100 = w.duration_s/(yds/100);
-    return secPer100;
-  }
-  function runPacePerMi(w) {
-    if (!w.distance_m||!w.duration_s) return null;
-    return w.duration_s/(w.distance_m/1609.34);
-  }
-  function fmtPace(secs, unit) {
-    if (!secs) return '—';
-    const m = Math.floor(secs/60), s = Math.round(secs%60);
-    return `${m}:${(s+'').padStart(2,'0')}/${unit}`;
-  }
-  function aerobicEfficiency(w) {
-    // pace at given HR — lower is better (faster pace per HR beat)
-    if (!w.avg_hr||!w.distance_m||!w.duration_s) return null;
-    return runPacePerMi(w)/w.avg_hr;
+  // Weekly totals for bar chart
+  const weekTotals = {};
+  for (const w of filtered) {
+    const d = new Date(w.date+'T12:00:00');
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day===0?-6:1);
+    const wk = new Date(d); wk.setDate(diff);
+    const wkStr = wk.toISOString().slice(0,10);
+    if (!weekTotals[wkStr]) weekTotals[wkStr] = {count:0, dist:0, dur:0};
+    weekTotals[wkStr].count++;
+    weekTotals[wkStr].dist += w.distance_m||0;
+    weekTotals[wkStr].dur += w.duration_s||0;
   }
 
-  // Compute trends (chronological order)
-  const chron = [...filtered].reverse();
+  const wkKeys = Object.keys(weekTotals).sort().slice(-6);
+  const chartData = wkKeys.map(k=>{
+    const wk = weekTotals[k];
+    const lbl = new Date(k+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    let val;
+    if (isSwim) val = Math.round(wk.dist*1.09361);
+    else if (isLift) val = wk.count;
+    else val = parseFloat((wk.dist/1609.34).toFixed(1));
+    return {l:lbl, v:val};
+  });
 
-  // Best/worst/recent stats
-  let html = '';
+  const chartColor = colors[sportKey]||'#9896A8';
+  const chartUnit = isSwim?'yds':isLift?'sessions':'mi';
 
-  if (isSwim) {
-    const withPace = chron.filter(w=>swimPacePer100(w));
-    const paces = withPace.map(w=>({date:w.date, pace:swimPacePer100(w), dist:Math.round(w.distance_m*1.09361)}));
-    const best = paces.reduce((b,p)=>p.pace<b.pace?p:b, paces[0]||{pace:Infinity});
-    const recent3 = paces.slice(-3);
-    const recent3avg = recent3.length ? recent3.reduce((s,p)=>s+p.pace,0)/recent3.length : null;
-    const older3 = paces.slice(-6,-3);
-    const older3avg = older3.length ? older3.reduce((s,p)=>s+p.pace,0)/older3.length : null;
-    const trend = (recent3avg && older3avg) ? ((older3avg-recent3avg)/older3avg*100) : null;
+  // Build HTML
+  let html = `<div class="section-label">Weekly ${isLift?'Sessions':isSwim?'Volume (m)':'Volume (mi)'} — Last 6 Weeks</div>`;
+  html += `<div class="bar-chart" id="sport-bar-chart" style="height:90px;margin:12px 0 16px"></div>`;
 
-    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-      <div style="background:var(--bg2);border-radius:12px;padding:14px">
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Best Pace</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:24px;color:${color}">${fmtPace(best.pace,'100y')}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px">${best.date?fmtDate(best.date):''}</div>
+  // Recent sessions
+  html += `<div class="section-label" style="margin-top:4px">Recent Sessions</div>`;
+  for (const w of filtered.slice(0,10)) {
+    const dist = w.distance_m>0?(isSwim?Math.round(w.distance_m*1.09361)+' yds':(w.distance_m/1609.34).toFixed(1)+' mi'):'';
+    const dur = w.duration_s>0?Math.round(w.duration_s/60)+' min':'';
+    const pace = isRun&&w.distance_m>0&&w.duration_s>0
+      ? (()=>{const spm=w.duration_s/(w.distance_m/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '';
+    const swimPace = isSwim&&w.distance_m>0&&w.duration_s>0
+      ? (()=>{const spm=w.duration_s/(w.distance_m*1.09361/100);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/100yds';})() : '';
+    const meta = isRun?[dist,pace].filter(Boolean).join(' · '):isSwim?[dist,swimPace||dur].filter(Boolean).join(' · '):[dur].filter(Boolean).join('');
+    html += `<div class="history-item">
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--ink)">${w.name||w.sport_type}</div>
+        <div class="history-date">${fmtDate(w.date)}</div>
       </div>
-      <div style="background:var(--bg2);border-radius:12px;padding:14px">
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Recent Avg</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:24px;color:${color}">${fmtPace(recent3avg,'100y')}</div>
-        <div style="font-size:11px;color:${trend>0?'#16A34A':trend<0?'#DC2626':'var(--ink3)'};margin-top:2px">${trend?`${trend>0?'▲':'▼'} ${Math.abs(trend).toFixed(1)}% vs prev 3`:'not enough data'}</div>
-      </div>
+      <div class="history-value" style="color:${chartColor}">${meta}</div>
     </div>`;
-
-    html += `<div class="section-label">Pace Per 100 Yds — Each Session</div>`;
-    html += `<div class="bar-chart" id="sport-bar-chart" style="height:90px;margin:12px 0 20px"></div>`;
-
-    html += `<div class="section-label">Recent Sessions</div>`;
-    for (const w of filtered.slice(0,8)) {
-      const dist = Math.round(w.distance_m*1.09361)+' yds';
-      const dur = Math.round(w.duration_s/60)+' min';
-      const pace = fmtPace(swimPacePer100(w),'100y');
-      html += `<div class="history-item">
-        <div><div style="font-size:13px;font-weight:500;color:var(--ink)">${w.name||'Swim'}</div>
-        <div class="history-date">${fmtDate(w.date)}</div></div>
-        <div style="text-align:right">
-          <div class="history-value" style="color:${color}">${pace}</div>
-          <div style="font-size:11px;color:var(--ink3)">${dist} · ${dur}</div>
-        </div>
-      </div>`;
-    }
-
-    document.getElementById('sport-detail-content').innerHTML = html;
-    const paceChartData = paces.slice(-8).map(p=>({l:new Date(p.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}), v:parseFloat((p.pace/60).toFixed(2))}));
-    setTimeout(()=>barChart('sport-bar-chart', paceChartData, color, v=>v+"'"), 50);
-
-  } else if (isRun) {
-    const withPace = chron.filter(w=>runPacePerMi(w));
-    const paces = withPace.map(w=>({date:w.date, pace:runPacePerMi(w), dist:(w.distance_m/1609.34).toFixed(1), hr:w.avg_hr, eff:aerobicEfficiency(w)}));
-    const best = paces.reduce((b,p)=>p.pace<b.pace?p:b, paces[0]||{pace:Infinity});
-    const recent3 = paces.slice(-3);
-    const recent3avg = recent3.length ? recent3.reduce((s,p)=>s+p.pace,0)/recent3.length : null;
-    const older3 = paces.slice(-6,-3);
-    const older3avg = older3.length ? older3.reduce((s,p)=>s+p.pace,0)/older3.length : null;
-    const trend = (recent3avg && older3avg) ? ((older3avg-recent3avg)/older3avg*100) : null;
-
-    // Aerobic efficiency trend
-    const effData = paces.filter(p=>p.eff).slice(-6);
-    const recentEff = effData.slice(-3).reduce((s,p)=>s+p.eff,0)/Math.max(effData.slice(-3).length,1);
-    const olderEff = effData.slice(0,3).reduce((s,p)=>s+p.eff,0)/Math.max(effData.slice(0,3).length,1);
-    const effTrend = (recentEff&&olderEff) ? ((olderEff-recentEff)/olderEff*100) : null;
-
-    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-      <div style="background:var(--bg2);border-radius:12px;padding:14px">
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Best Pace</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:24px;color:${color}">${fmtPace(best.pace,'/mi')}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px">${best.date?fmtDate(best.date):''}</div>
-      </div>
-      <div style="background:var(--bg2);border-radius:12px;padding:14px">
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Recent Avg</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:24px;color:${color}">${fmtPace(recent3avg,'/mi')}</div>
-        <div style="font-size:11px;color:${trend>0?'#16A34A':trend<0?'#DC2626':'var(--ink3)'};margin-top:2px">${trend?`${trend>0?'▲':'▼'} ${Math.abs(trend).toFixed(1)}% vs prev 3`:'not enough data'}</div>
-      </div>
-    </div>`;
-
-    if (effTrend !== null) {
-      html += `<div style="background:${effTrend>0?'rgba(22,163,74,0.08)':'rgba(220,38,38,0.08)'};border-radius:12px;padding:12px 14px;margin-bottom:16px">
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Aerobic Efficiency</div>
-        <div style="font-size:13px;color:var(--ink)">You're running <strong>${effTrend>0?'faster':'slower'}</strong> at the same heart rate — ${effTrend>0?'fitness is improving ▲':'fitness needs work ▼'}</div>
-      </div>`;
-    }
-
-    html += `<div class="section-label">Pace Per Mile — Each Run</div>`;
-    html += `<div class="bar-chart" id="sport-bar-chart" style="height:90px;margin:12px 0 20px"></div>`;
-
-    html += `<div class="section-label">Recent Runs</div>`;
-    for (const w of filtered.slice(0,8)) {
-      const dist = (w.distance_m/1609.34).toFixed(1)+' mi';
-      const dur = Math.round(w.duration_s/60)+' min';
-      const pace = fmtPace(runPacePerMi(w),'/mi');
-      const hr = w.avg_hr ? w.avg_hr+' bpm avg' : '';
-      html += `<div class="history-item">
-        <div><div style="font-size:13px;font-weight:500;color:var(--ink)">${w.name||'Run'}</div>
-        <div class="history-date">${fmtDate(w.date)}</div></div>
-        <div style="text-align:right">
-          <div class="history-value" style="color:${color}">${pace}</div>
-          <div style="font-size:11px;color:var(--ink3)">${dist}${hr?' · '+hr:''}</div>
-        </div>
-      </div>`;
-    }
-
-    document.getElementById('sport-detail-content').innerHTML = html;
-    const paceChartData = paces.slice(-8).map(p=>({l:new Date(p.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}), v:parseFloat((p.pace/60).toFixed(2))}));
-    setTimeout(()=>barChart('sport-bar-chart', paceChartData, color, v=>v+"'"), 50);
-
-  } else if (isLift) {
-    const totalSessions = filtered.length;
-    const totalMins = Math.round(filtered.reduce((s,w)=>s+(w.duration_s||0),0)/60);
-    const avgDur = totalSessions ? Math.round(totalMins/totalSessions) : 0;
-    const thisWeekLifts = filtered.filter(w=>w.date>=weekStart()).length;
-
-    html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
-      <div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${color}">${thisWeekLifts}</div>
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">This Week</div>
-      </div>
-      <div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${color}">${avgDur}</div>
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Avg Min</div>
-      </div>
-      <div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${color}">${totalSessions}</div>
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">8wk Total</div>
-      </div>
-    </div>`;
-
-    html += `<div class="section-label">Recent Sessions</div>`;
-    for (const w of filtered.slice(0,8)) {
-      const dur = Math.round(w.duration_s/60)+' min';
-      const hr = w.avg_hr ? Math.round(w.avg_hr)+' bpm' : '';
-      html += `<div class="history-item">
-        <div><div style="font-size:13px;font-weight:500;color:var(--ink)">${w.name||'Lift'}</div>
-        <div class="history-date">${fmtDate(w.date)}</div></div>
-        <div style="text-align:right">
-          <div class="history-value" style="color:${color}">${dur}</div>
-          ${hr?`<div style="font-size:11px;color:var(--ink3)">${hr} avg</div>`:''}
-        </div>
-      </div>`;
-    }
-
-    document.getElementById('sport-detail-content').innerHTML = html;
-    const weekTotals2 = {};
-    for (const w of filtered) {
-      const d2 = new Date(w.date+'T12:00:00');
-      const day = d2.getDay();
-      const diff = d2.getDate()-day+(day===0?-6:1);
-      const wk = new Date(d2); wk.setDate(diff);
-      const wkStr = wk.toISOString().slice(0,10);
-      weekTotals2[wkStr] = (weekTotals2[wkStr]||0)+1;
-    }
-    const wkKeys2 = Object.keys(weekTotals2).sort().slice(-6);
-    const liftChartData = wkKeys2.map(k=>({l:new Date(k+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}),v:weekTotals2[k]}));
-    setTimeout(()=>barChart('sport-bar-chart', liftChartData, color, v=>v+' sessions'), 50);
   }
+
+  document.getElementById('sport-detail-content').innerHTML = html;
+  setTimeout(()=>barChart('sport-bar-chart', chartData, chartColor, v=>v+(isLift?' sessions':' '+chartUnit)), 50);
 }
 
 function closeModal() {
