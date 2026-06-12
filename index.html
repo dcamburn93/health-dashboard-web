@@ -831,26 +831,6 @@ function renderReadinessCard(scores, workouts28) {
   setTimeout(()=>barChart('readiness-mini-chart', chartData, color), 50);
 }
 
-async function loadMorningBrief(data) {
-  const { sleep, hr, activity, scores, todayPlan, weekLabel } = data;
-  const sleepH = sleep ? Math.floor(sleep.duration_h)+'h '+Math.round((sleep.duration_h%1)*60)+'m' : 'unknown';
-  const hrv = hr?.hrv_ms ? Math.round(hr.hrv_ms)+'ms' : null;
-  const rhr = hr?.resting_hr ? hr.resting_hr+'bpm' : null;
-  const steps = activity?.steps ? Math.round(activity.steps).toLocaleString() : null;
-  const readiness = scores?.total;
-  const plan = todayPlan?.length ? todayPlan.map(s=>s.l+' ('+s.d+')').join(', ') : 'Rest day';
-  const prompt = `You are a concise personal health coach. Write a 2-sentence morning brief for Danny. Be direct and specific. Use actual numbers. No greetings.\n\nSleep: ${sleepH}\nResting HR: ${rhr||'n/a'}\nHRV: ${hrv||'n/a'}\nSteps: ${steps||'0'}\nReadiness: ${readiness||'?'}/100\nTraining: ${weekLabel}\nToday: ${plan}\n\nFirst sentence: recovery/readiness. Second sentence: guidance for today.`;
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
-    });
-    const d2 = await res.json();
-    document.getElementById('brief-text').textContent = d2.content?.[0]?.text || 'Brief unavailable.';
-  } catch(e) {
-    document.getElementById('brief-text').textContent = 'Brief unavailable.';
-  }
 }
 
 async function loadAll() {
