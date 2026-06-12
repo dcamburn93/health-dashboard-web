@@ -429,10 +429,11 @@ function todayStr() {
   return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 }
 function weekStart() {
-  const d = new Date(); const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const m = new Date(d.setDate(diff));
-  return m.toISOString().slice(0,10);
+  const now = new Date();
+  const day = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const m = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+  return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');
 }
 function fmtDate(str) {
   return toDate(str).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
