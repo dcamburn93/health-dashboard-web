@@ -1,0 +1,22 @@
+
+[functions.strava-webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/strava-webhook/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/strava-webhook/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/strava-webhook/*.html" ]
+
+[functions.claude-proxy]
+enabled = true
+verify_jwt = false
+import_map = "./functions/claude-proxy/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/claude-proxy/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/claude-proxy/*.html" ]
