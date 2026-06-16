@@ -880,7 +880,7 @@ async function loadAll() {
   const ytdRunMi = (ytdRuns.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(0);
   document.getElementById('ytd-run').textContent = ytdRunMi;
   const ytdSwimYds = Math.round(ytdSwims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
-  if(document.getElementById('ytd-sub')) document.getElementById('ytd-sub').textContent = ytdSwimYds.toLocaleString()+' yds swim';
+  document.getElementById('ytd-swim').textContent = ytdSwimYds.toLocaleString();
   document.getElementById('ytd-bike').textContent = (ytdBikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(0);
 
   // TRAINING WEEK SUMMARY
