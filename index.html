@@ -265,12 +265,12 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
       <div class="card-chevron">›</div>
     </div>
     <div class="training-stats">
-      <div class="training-stat" onclick="openSportDetail('run')" style="cursor:pointer">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('run')" style="cursor:pointer">
         <div class="training-stat-value" id="week-miles">—</div>
         <div class="training-stat-unit">mi</div>
         <div class="training-stat-label">Run ›</div>
       </div>
-      <div class="training-stat" onclick="openSportDetail('swim')" style="cursor:pointer">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')" style="cursor:pointer">
         <div class="training-stat-value" id="week-swim">—</div>
         <div class="training-stat-unit">yds</div>
         <div class="training-stat-label">Swim ›</div>
