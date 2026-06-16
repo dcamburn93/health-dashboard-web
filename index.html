@@ -136,8 +136,11 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .modal {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  background: var(--card);
+  background: rgba(225,235,225,0.75);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border-radius: 24px 24px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.7);
   padding: 0 20px 40px;
   max-height: 88vh;
   overflow-y: auto;
