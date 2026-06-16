@@ -885,7 +885,7 @@ async function loadAll() {
   // READINESS — fetch 28 days of workouts + sleep + HR
   const d28ago = new Date(); d28ago.setDate(d28ago.getDate()-28);
   const since28 = d28ago.toISOString().slice(0,10);
-  gWorkouts28 = await q('workouts', `date=gte.${since28}&order=date.desc&limit=100`);
+  gWorkouts28 = await q('workouts', `select=*&date=gte.${since28}&order=date.desc&limit=100`);
   gSleep28 = await q('sleep', `date=gte.${since28}&order=date.desc&limit=30`);
   gHR28 = await q('heart_rate', `date=gte.${since28}&order=date.desc&limit=30`);
   const scores = calcReadiness(gWorkouts28, gSleep28, gHR28);
@@ -1231,7 +1231,7 @@ async function openSportDetail(sportKey) {
   // Fetch last 8 weeks of this sport
   const eightWeeksAgo = new Date(); eightWeeksAgo.setDate(eightWeeksAgo.getDate()-56);
   const since = eightWeeksAgo.toISOString().slice(0,10);
-  const allWorkouts = await q('workouts', `date=gte.${since}&order=date.desc&limit=50`);
+  const allWorkouts = await q('workouts', `select=*&date=gte.${since}&order=date.desc&limit=50`);
 
   let filtered;
   if (sportKey==='run') filtered = allWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('run'));
