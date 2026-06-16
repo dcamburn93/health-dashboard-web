@@ -256,10 +256,12 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
       <div class="metric-sub" id="hr-sub"></div>
     </div>
     <div class="metric-card" onclick="openModal('ytd')">
-      <div class="metric-value" id="ytd-run" style="font-size:22px">—</div>
-      <div class="metric-unit">mi run</div>
-      <div class="metric-label">2026</div>
-      <div class="metric-sub" id="ytd-sub"></div>
+      <div class="metric-label" style="margin-bottom:6px">2026 SO FAR</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--ink);line-height:1.8">
+        <span id="ytd-run">—</span> mi run<br>
+        <span id="ytd-swim">—</span> yds swim<br>
+        <span id="ytd-bike">—</span> mi bike
+      </div>
     </div>
 
   </div>
