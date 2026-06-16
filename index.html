@@ -825,8 +825,8 @@ async function loadAll() {
     q('sleep','order=date.desc&limit=14'),
     q('daily_activity','order=date.desc&limit=14'),
     q('heart_rate','order=date.desc&limit=14'),
-    q('workouts',`date=gte.${ws}&order=date.desc`),
-    q('workouts',`date=eq.${td}&order=date.asc`),
+    q('workouts',`select=*&date=gte.${ws}&order=date.desc`),
+    q('workouts',`select=*&date=eq.${td}&order=date.asc`),
   ]);
 
   // SLEEP
