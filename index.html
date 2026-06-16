@@ -255,22 +255,11 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
       <div class="metric-label">Resting HR</div>
       <div class="metric-sub" id="hr-sub"></div>
     </div>
-    <div class="metric-card" onclick="openModal('ytd')" style="grid-column:span 2">
-      <div class="card-label" style="font-size:10px;margin-bottom:6px">2026 SO FAR</div>
-      <div style="display:flex;gap:16px;align-items:flex-end">
-        <div>
-          <div class="metric-value" id="ytd-run" style="font-size:22px">—</div>
-          <div class="metric-unit">mi run</div>
-        </div>
-        <div>
-          <div class="metric-value" id="ytd-swim" style="font-size:22px">—</div>
-          <div class="metric-unit">yds swim</div>
-        </div>
-        <div>
-          <div class="metric-value" id="ytd-bike" style="font-size:22px">—</div>
-          <div class="metric-unit">mi bike</div>
-        </div>
-      </div>
+    <div class="metric-card" onclick="openModal('ytd')">
+      <div class="metric-value" id="ytd-run" style="font-size:22px">—</div>
+      <div class="metric-unit">mi run</div>
+      <div class="metric-label">2026</div>
+      <div class="metric-sub" id="ytd-sub"></div>
     </div>
 
   </div>
