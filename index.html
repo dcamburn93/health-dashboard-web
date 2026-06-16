@@ -875,8 +875,10 @@ async function loadAll() {
   const ytdRuns = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('run'));
   const ytdSwims = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
   const ytdBikes = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('ride')||w.sport_type?.toLowerCase().includes('bike')||w.sport_type?.toLowerCase().includes('cycling'));
-  document.getElementById('ytd-run').textContent = (ytdRuns.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(0);
-  document.getElementById('ytd-swim').textContent = Math.round(ytdSwims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
+  const ytdRunMi = (ytdRuns.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(0);
+  document.getElementById('ytd-run').textContent = ytdRunMi;
+  const ytdSwimYds = Math.round(ytdSwims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
+  if(document.getElementById('ytd-sub')) document.getElementById('ytd-sub').textContent = ytdSwimYds.toLocaleString()+' yds swim';
   document.getElementById('ytd-bike').textContent = (ytdBikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(0);
 
   // TRAINING WEEK SUMMARY
