@@ -585,7 +585,7 @@ function parseGame(event, teamEspnId) {
   const dateStr = date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'America/Los_Angeles'});
   return {
     isHome, opp: opp?.team?.abbreviation||'?',
-    ourScore: us?.score??'', oppScore: opp?.score??'',
+    ourScore: us?.score?.displayValue??us?.score??'', oppScore: opp?.score?.displayValue??opp?.score??'',
     won: us?.winner===true,
     statusName: status?.name, statusDetail: status?.detail||'',
     live: status?.name==='STATUS_IN_PROGRESS'||status?.name==='STATUS_HALFTIME',
@@ -888,8 +888,7 @@ async function loadAll() {
   gWorkouts28 = await q('workouts', `select=*&date=gte.${since28}&order=date.desc&limit=100`);
   gSleep28 = await q('sleep', `date=gte.${since28}&order=date.desc&limit=30`);
   gHR28 = await q('heart_rate', `date=gte.${since28}&order=date.desc&limit=30`);
-  const scores = calcReadiness(gWorkouts28, gSleep28, gHR28);
-  renderReadinessCard(scores, gWorkouts28);
+
 }
 
 function openModal(type) {
