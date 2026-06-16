@@ -544,21 +544,27 @@ function isInSeason(team) {
 
 async function fetchTeamData(team) {
   try {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/${team.league}/${team.espnLeague}/teams/${team.espnId}/schedule?limit=10`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const events = data.events || [];
+    const teamEspnId = String(team.espnId);
+
+    // Check live scoreboard first for today's game
+    const sbRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.league}/${team.espnLeague}/scoreboard`);
+    const sbData = await sbRes.json();
+    const sbEvents = sbData.events || [];
+    let todayGame = sbEvents.find(e =>
+      e.competitions?.[0]?.competitors?.some(c => c.team?.id === teamEspnId)
+    ) || null;
+
+    // Fetch schedule for last/next games
+    const schRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.league}/${team.espnLeague}/teams/${team.espnId}/schedule?limit=10`);
+    const schData = await schRes.json();
+    const events = schData.events || [];
     const td = todayStr();
 
-    // Find today's game, last result, next game
-    let todayGame = null, lastGame = null, nextGame = null;
-
+    let lastGame = null, nextGame = null;
     for (const e of events) {
-      const gameDate = e.date?.slice(0,10);
+      const gameDate = new Date(e.date).toLocaleDateString('en-CA', {timeZone:'America/Los_Angeles'});
       const status = e.competitions?.[0]?.status?.type?.name;
-      if (gameDate === td && (status === 'STATUS_IN_PROGRESS' || status === 'STATUS_SCHEDULED' || status === 'STATUS_HALFTIME')) {
-        todayGame = e;
-      } else if (gameDate < td && (status === 'STATUS_FINAL' || status === 'STATUS_FINAL_OVERTIME')) {
+      if (gameDate < td && (status?.includes('FINAL'))) {
         if (!lastGame) lastGame = e;
       } else if (gameDate > td && !nextGame) {
         nextGame = e;
