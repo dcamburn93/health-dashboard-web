@@ -843,15 +843,12 @@ async function loadAll() {
     document.getElementById('cal-val').textContent = todayAct.active_calories ? Math.round(todayAct.active_calories) : '—';
   }
 
-  // HR/HRV
+  // HR
   const todayHR = gHR.find(r=>r.date===td) || gHR[0];
   if (todayHR) {
     document.getElementById('hr-val').textContent = todayHR.resting_hr || '—';
-    document.getElementById('hrv-val').textContent = todayHR.hrv_ms ? Math.round(todayHR.hrv_ms) : '—';
     const r7 = gHR.slice(0,7).filter(r=>r.resting_hr);
-    const h7 = gHR.slice(0,7).filter(r=>r.hrv_ms);
     if (r7.length) document.getElementById('hr-sub').textContent = `7d avg ${Math.round(r7.reduce((s,r)=>s+r.resting_hr,0)/r7.length)} bpm`;
-    if (h7.length) document.getElementById('hrv-sub').textContent = `7d avg ${Math.round(h7.reduce((s,r)=>s+r.hrv_ms,0)/h7.length)} ms`;
   }
 
   // TRAINING WEEK SUMMARY
