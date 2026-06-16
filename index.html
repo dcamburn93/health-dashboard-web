@@ -585,7 +585,7 @@ function parseGame(event, teamEspnId) {
   const dateStr = date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'America/Los_Angeles'});
   return {
     isHome, opp: opp?.team?.abbreviation||'?',
-    ourScore: us?.score||'', oppScore: opp?.score||'',
+    ourScore: us?.score??'', oppScore: opp?.score??'',
     won: us?.winner===true,
     statusName: status?.name, statusDetail: status?.detail||'',
     live: status?.name==='STATUS_IN_PROGRESS'||status?.name==='STATUS_HALFTIME',
