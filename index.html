@@ -255,6 +255,23 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
       <div class="metric-label">Resting HR</div>
       <div class="metric-sub" id="hr-sub"></div>
     </div>
+    <div class="metric-card" onclick="openModal('ytd')" style="grid-column:span 2">
+      <div class="card-label" style="font-size:10px;margin-bottom:6px">2026 SO FAR</div>
+      <div style="display:flex;gap:16px;align-items:flex-end">
+        <div>
+          <div class="metric-value" id="ytd-run" style="font-size:22px">—</div>
+          <div class="metric-unit">mi run</div>
+        </div>
+        <div>
+          <div class="metric-value" id="ytd-swim" style="font-size:22px">—</div>
+          <div class="metric-unit">yds swim</div>
+        </div>
+        <div>
+          <div class="metric-value" id="ytd-bike" style="font-size:22px">—</div>
+          <div class="metric-unit">mi bike</div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -346,6 +363,13 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <div style="font-size:11px;color:var(--ink3);margin-bottom:12px;cursor:pointer;font-weight:500" onclick="openModal('training')">&#8592; Back to This Week</div>
   <div class="modal-title" id="sport-modal-title"></div>
   <div id="sport-detail-content"></div>
+</div>
+
+<!-- YTD MODAL -->
+<div class="modal" id="modal-ytd">
+  <div class="modal-handle"></div>
+  <div class="modal-title">2026 Season</div>
+  <div id="ytd-modal-content"></div>
 </div>
 
 <!-- PLAN MODAL -->
@@ -526,7 +550,7 @@ function barChart(containerId, data, color, fmt) {
 }
 
 // GLOBAL DATA CACHE
-let gSleep=[], gActivity=[], gHR=[], gWorkoutsWeek=[], gWorkoutsToday=[];
+let gSleep=[], gActivity=[], gHR=[], gWorkoutsWeek=[], gWorkoutsToday=[], gYearWorkouts=[];
 
 // SPORTS
 let gSports = {};
@@ -827,12 +851,13 @@ async function loadAll() {
   document.getElementById('refresh-time').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 
   // Fetch all data
-  [gSleep, gActivity, gHR, gWorkoutsWeek, gWorkoutsToday] = await Promise.all([
+  [gSleep, gActivity, gHR, gWorkoutsWeek, gWorkoutsToday, gYearWorkouts] = await Promise.all([
     q('sleep','order=date.desc&limit=14'),
     q('daily_activity','order=date.desc&limit=14'),
     q('heart_rate','order=date.desc&limit=14'),
     q('workouts',`select=*&date=gte.${ws}&order=date.desc`),
     q('workouts',`select=*&date=eq.${td}&order=date.asc`),
+    q('workouts','select=sport_type,distance_m&date=gte.2026-01-01&order=date.asc'),
   ]);
 
   // SLEEP
@@ -856,6 +881,14 @@ async function loadAll() {
     const r7 = gHR.slice(0,7).filter(r=>r.resting_hr);
     if (r7.length) document.getElementById('hr-sub').textContent = `7d avg ${Math.round(r7.reduce((s,r)=>s+r.resting_hr,0)/r7.length)} bpm`;
   }
+
+  // YTD STATS
+  const ytdRuns = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('run'));
+  const ytdSwims = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
+  const ytdBikes = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('ride')||w.sport_type?.toLowerCase().includes('bike')||w.sport_type?.toLowerCase().includes('cycling'));
+  document.getElementById('ytd-run').textContent = (ytdRuns.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(0);
+  document.getElementById('ytd-swim').textContent = Math.round(ytdSwims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
+  document.getElementById('ytd-bike').textContent = (ytdBikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(0);
 
   // TRAINING WEEK SUMMARY
   const runs = gWorkoutsWeek.filter(w=>w.sport_type?.toLowerCase().includes('run'));
@@ -999,6 +1032,40 @@ function openModal(type) {
         <div class="workout-meta">${[dist,pace||dur].filter(Boolean).join(' · ')}</div>
       </div>`;
     }).join('');
+  }
+
+  if (type==='ytd') {
+    const ytdRuns = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('run'));
+    const ytdSwims = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
+    const ytdBikes = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('ride')||w.sport_type?.toLowerCase().includes('bike')||w.sport_type?.toLowerCase().includes('cycling'));
+    const ytdLifts = gYearWorkouts.filter(w=>w.sport_type?.toLowerCase().includes('weight')||w.sport_type?.toLowerCase().includes('strength'));
+    const runMi = (ytdRuns.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(1);
+    const swimYds = Math.round(ytdSwims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
+    const bikeMi = (ytdBikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34).toFixed(1);
+    const totalHrs = Math.round(gYearWorkouts.reduce((s,w)=>s+(w.duration_s||0),0)/3600);
+    document.getElementById('ytd-modal-content').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+        <div style="background:rgba(217,119,6,0.08);border-radius:12px;padding:16px">
+          <div style="font-family:'DM Serif Display',serif;font-size:36px;color:#D97706">${runMi}</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:#D97706;margin-top:2px">MILES RUN</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px">${ytdRuns.length} sessions</div>
+        </div>
+        <div style="background:rgba(14,165,160,0.08);border-radius:12px;padding:16px">
+          <div style="font-family:'DM Serif Display',serif;font-size:36px;color:#0EA5A0">${swimYds.toLocaleString()}</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:#0EA5A0;margin-top:2px">YARDS SWUM</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px">${ytdSwims.length} sessions</div>
+        </div>
+        <div style="background:rgba(124,58,237,0.08);border-radius:12px;padding:16px">
+          <div style="font-family:'DM Serif Display',serif;font-size:36px;color:#7C3AED">${bikeMi}</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:#7C3AED;margin-top:2px">MILES BIKED</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px">${ytdBikes.length} sessions</div>
+        </div>
+        <div style="background:rgba(59,111,232,0.08);border-radius:12px;padding:16px">
+          <div style="font-family:'DM Serif Display',serif;font-size:36px;color:#3B6FE8">${ytdLifts.length}</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:#3B6FE8;margin-top:2px">LIFTS</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px">${totalHrs} total hours</div>
+        </div>
+      </div>`;
   }
 
   if (type==='sport') { /* handled by openSportDetail */ }
