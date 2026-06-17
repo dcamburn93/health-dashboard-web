@@ -281,7 +281,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <!-- SPOTIFY CARD -->
   <div class="card" onclick="openModal('spotify')" style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div class="card-label">🎵 This Week's Soundtrack</div>
+      <div class="card-label">🎵 Listening This Week 🎵</div>
       <div class="card-chevron">›</div>
     </div>
     <div id="spotify-strip">
@@ -887,10 +887,15 @@ async function loadSpotify() {
 
     // Strip card
     document.getElementById('spotify-strip').innerHTML = `
-      <div style="margin-top:4px">
-        ${isPlaying ? `<div style="font-size:12px;color:#1DB954;font-weight:600;margin-bottom:6px">▶ ${currentTrack} — ${currentArtist}</div>` : ''}
-        <div style="font-size:13px;color:var(--ink);font-weight:500">${artist1}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px">Top artist · ${track1} by ${track1Artist}</div>
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:0.5px">TOP ARTIST</div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink)">${artist1}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:0.5px">TOP SONG</div>
+          <div style="font-size:13px;font-weight:500;color:var(--ink)">${track1}</div>
+        </div>
       </div>`;
 
     // Store for modal
