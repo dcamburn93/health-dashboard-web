@@ -278,6 +278,17 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 
   </div>
 
+  <!-- SPOTIFY CARD -->
+  <div class="card" onclick="openModal('spotify')" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div class="card-label">🎵 This Week's Soundtrack</div>
+      <div class="card-chevron">›</div>
+    </div>
+    <div id="spotify-strip">
+      <div style="font-size:12px;color:var(--ink3)">Loading...</div>
+    </div>
+  </div>
+
   <!-- TRAINING SUMMARY -->
   <div class="training-card" onclick="openModal('training')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -373,6 +384,13 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <div class="modal-handle"></div>
   <div class="modal-title">2026 Season</div>
   <div id="ytd-modal-content"></div>
+</div>
+
+<!-- SPOTIFY MODAL -->
+<div class="modal" id="modal-spotify">
+  <div class="modal-handle"></div>
+  <div class="modal-title">🎵 Spotify</div>
+  <div id="spotify-modal-content"><div style="color:var(--ink3);font-size:13px">Loading...</div></div>
 </div>
 
 <!-- PLAN MODAL -->
@@ -844,12 +862,51 @@ function renderReadinessCard(scores, workouts28) {
   setTimeout(()=>barChart('readiness-mini-chart', chartData, color), 50);
 }
 
+
+const SPOTIFY_PROXY = 'https://csylhxbnpqsfwicqrsex.supabase.co/functions/v1/spotify-proxy';
+
+async function spotifyFetch(endpoint) {
+  const res = await fetch(`${SPOTIFY_PROXY}?endpoint=${encodeURIComponent(endpoint)}`);
+  return res.json();
+}
+
+async function loadSpotify() {
+  try {
+    const [topArtists, topTracks, nowPlaying] = await Promise.all([
+      spotifyFetch('me/top/artists?limit=5&time_range=short_term'),
+      spotifyFetch('me/top/tracks?limit=5&time_range=short_term'),
+      spotifyFetch('me/player/currently-playing'),
+    ]);
+
+    const artist1 = topArtists.items?.[0]?.name || '—';
+    const track1 = topTracks.items?.[0]?.name || '—';
+    const track1Artist = topTracks.items?.[0]?.artists?.[0]?.name || '';
+    const isPlaying = nowPlaying?.is_playing;
+    const currentTrack = nowPlaying?.item?.name;
+    const currentArtist = nowPlaying?.item?.artists?.[0]?.name;
+
+    // Strip card
+    document.getElementById('spotify-strip').innerHTML = `
+      <div style="margin-top:4px">
+        ${isPlaying ? `<div style="font-size:12px;color:#1DB954;font-weight:600;margin-bottom:6px">▶ ${currentTrack} — ${currentArtist}</div>` : ''}
+        <div style="font-size:13px;color:var(--ink);font-weight:500">${artist1}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px">Top artist · ${track1} by ${track1Artist}</div>
+      </div>`;
+
+    // Store for modal
+    window._spotifyData = { topArtists, topTracks, nowPlaying };
+  } catch(e) {
+    document.getElementById('spotify-strip').innerHTML = '<div style="font-size:12px;color:var(--ink3)">—</div>';
+  }
+}
+
 async function loadAll() {
   const td = todayStr();
   const ws = weekStart();
 
   loadWeather();
   loadSports();
+  loadSpotify();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
   document.getElementById('refresh-time').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 
@@ -1071,6 +1128,53 @@ function openModal(type) {
           <div style="font-size:11px;color:var(--ink3);margin-top:4px">${totalHrs} total hours</div>
         </div>
       </div>`;
+  }
+
+  if (type==='spotify') {
+    const d = window._spotifyData;
+    if (!d) { document.getElementById('spotify-modal-content').innerHTML = '<div style="color:var(--ink3)">Loading...</div>'; return; }
+    const nowPlaying = d.nowPlaying;
+    const isPlaying = nowPlaying?.is_playing;
+    const currentTrack = nowPlaying?.item?.name;
+    const currentArtist = nowPlaying?.item?.artists?.[0]?.name;
+    const albumArt = nowPlaying?.item?.album?.images?.[0]?.url;
+
+    let html = '';
+    if (isPlaying) {
+      html += `<div style="display:flex;gap:12px;align-items:center;background:rgba(29,185,84,0.08);border-radius:12px;padding:12px;margin-bottom:20px">
+        ${albumArt ? `<img src="${albumArt}" style="width:48px;height:48px;border-radius:6px">` : ''}
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:1px;color:#1DB954;margin-bottom:2px">NOW PLAYING</div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink)">${currentTrack}</div>
+          <div style="font-size:12px;color:var(--ink3)">${currentArtist}</div>
+        </div>
+      </div>`;
+    }
+
+    html += `<div class="section-label">Top Artists This Week</div>`;
+    html += d.topArtists.items?.slice(0,5).map((a,i) => `
+      <div class="history-item">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:13px;color:var(--ink3);width:16px">${i+1}</div>
+          ${a.images?.[2]?.url ? `<img src="${a.images[2].url}" style="width:36px;height:36px;border-radius:50%">` : ''}
+          <div style="font-size:13px;font-weight:500;color:var(--ink)">${a.name}</div>
+        </div>
+      </div>`).join('');
+
+    html += `<div class="section-label" style="margin-top:20px">Top Songs This Week</div>`;
+    html += d.topTracks.items?.slice(0,5).map((t,i) => `
+      <div class="history-item">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:13px;color:var(--ink3);width:16px">${i+1}</div>
+          ${t.album?.images?.[2]?.url ? `<img src="${t.album.images[2].url}" style="width:36px;height:36px;border-radius:6px">` : ''}
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--ink)">${t.name}</div>
+            <div style="font-size:11px;color:var(--ink3)">${t.artists?.[0]?.name}</div>
+          </div>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('spotify-modal-content').innerHTML = html;
   }
 
   if (type==='sport') { /* handled by openSportDetail */ }
