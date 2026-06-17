@@ -342,7 +342,8 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 <div class="modal" id="modal-sleep">
   <div class="modal-handle"></div>
   <div class="modal-title">Sleep</div>
-  <div class="section-label">7-Night History</div>
+  <div id="sleep-stages-tonight"></div>
+  <div class="section-label" style="margin-top:20px">7-Night History</div>
   <div class="bar-chart" id="sleep-chart"></div>
   <div id="sleep-history"></div>
 </div>
@@ -1076,16 +1077,75 @@ function openModal(type) {
   const days7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
 
   if (type==='sleep') {
+    const lastSleep = gSleep.find(r=>r.duration_h>0.5);
+
+    // Sleep stages for last night
+    let stagesHTML = '';
+    if (lastSleep && (lastSleep.deep_h || lastSleep.rem_h || lastSleep.core_h)) {
+      const deep = lastSleep.deep_h || 0;
+      const rem = lastSleep.rem_h || 0;
+      const core = lastSleep.core_h || 0;
+      const awake = lastSleep.awake_h || 0;
+      const total = lastSleep.duration_h || (deep + rem + core + awake);
+      const stages = [
+        { label: 'Deep', value: deep, color: '#3B6FE8' },
+        { label: 'REM', value: rem, color: '#7C3AED' },
+        { label: 'Core', value: core, color: '#0EA5A0' },
+        { label: 'Awake', value: awake, color: '#F59E0B' },
+      ].filter(s => s.value > 0);
+
+      // Stacked bar
+      const barSegments = stages.map(s =>
+        `<div style="flex:${s.value};background:${s.color};height:100%;border-radius:0"></div>`
+      ).join('');
+
+      // Stage pills
+      const pills = stages.map(s =>
+        `<div style="display:flex;align-items:center;gap:6px">
+          <div style="width:8px;height:8px;border-radius:2px;background:${s.color}"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink)">${fmtH(s.value)}</div>
+            <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px">${s.label.toUpperCase()}</div>
+          </div>
+        </div>`
+      ).join('');
+
+      stagesHTML = `
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Last Night · ${fmtH(total)}</div>
+          <div style="display:flex;height:8px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:16px">
+            ${barSegments}
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            ${pills}
+          </div>
+        </div>`;
+    }
+    document.getElementById('sleep-stages-tonight').innerHTML = stagesHTML;
+
+    // 7-night bar chart
     const data = days7.map(d=>{
       const r=gSleep.find(s=>s.date===d);
       return {l:new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'}).slice(0,2), v:r?.duration_h||0, date:d};
     });
     barChart('sleep-chart', data, '#6366F1', v=>fmtH(v));
-    document.getElementById('sleep-history').innerHTML = [...gSleep].slice(0,7).map(r=>`
-      <div class="history-item">
-        <span class="history-date">${fmtDate(r.date)}</span>
+
+    // History list with stages
+    document.getElementById('sleep-history').innerHTML = [...gSleep].filter(r=>r.duration_h>0.5).slice(0,7).map(r=>{
+      const hasStages = r.deep_h || r.rem_h || r.core_h;
+      const stageStr = hasStages ? [
+        r.deep_h ? `<span style="color:#3B6FE8">${fmtH(r.deep_h)} deep</span>` : '',
+        r.rem_h ? `<span style="color:#7C3AED">${fmtH(r.rem_h)} rem</span>` : '',
+        r.core_h ? `<span style="color:#0EA5A0">${fmtH(r.core_h)} core</span>` : '',
+      ].filter(Boolean).join(' · ') : '';
+      return `<div class="history-item">
+        <div>
+          <div class="history-date">${fmtDate(r.date)}</div>
+          ${stageStr ? `<div style="font-size:10px;margin-top:2px">${stageStr}</div>` : ''}
+        </div>
         <span class="history-value">${fmtH(r.duration_h)}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   if (type==='movement') {
