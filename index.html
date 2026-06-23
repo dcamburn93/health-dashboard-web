@@ -1737,6 +1737,15 @@ setInterval(loadAll, 5*60*1000);
     const d = window._tlData;
     if (!d) { loadTrainingLoad().then(renderTrainingLoadModal); return; }
 
+    // One-line summary
+    let summary;
+    if      (d.lastTSB >  15) summary = 'You\'re fresh and peaked — ideal if a race is coming up soon.';
+    else if (d.lastTSB >   5) summary = 'Good form right now — fitness is high and fatigue is manageable.';
+    else if (d.lastTSB >  -5) summary = 'Neutral — balanced between fitness and fatigue, solid training zone.';
+    else if (d.lastTSB > -15) summary = 'Building load — fatigue is accumulating, which means fitness is growing.';
+    else                      summary = 'High fatigue — consider an easier week to let fitness absorb.';
+    document.getElementById('tlSummary').textContent = summary;
+
     document.getElementById('modalCTL').textContent = d.lastCTL;
     document.getElementById('modalATL').textContent = d.lastATL;
     document.getElementById('modalTSB').textContent = d.tsbSign + d.lastTSB;
@@ -1833,6 +1842,7 @@ setInterval(loadAll, 5*60*1000);
           <span class="modal-title">Training Load Trend</span>
           <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
+        <p id="tlSummary" style="font-size:13px;color:var(--ink3);margin:8px 0 4px;font-style:italic;"></p>
         <div style="display:flex;gap:10px;margin:12px 0;">
           <div style="flex:1;background:rgba(0,0,0,.06);border-radius:10px;padding:10px;text-align:center;">
             <div style="font-size:11px;opacity:.6;">Fitness (CTL)</div>
