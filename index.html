@@ -1734,9 +1734,8 @@ setInterval(loadAll, 5*60*1000);
   }
 
   function renderTrainingLoadModal() {
-    document.getElementById('trainingLoadModal').style.display = 'flex';
     const d = window._tlData;
-    if (!d) return;
+    if (!d) { loadTrainingLoad().then(renderTrainingLoadModal); return; }
 
     document.getElementById('modalCTL').textContent = d.lastCTL;
     document.getElementById('modalATL').textContent = d.lastATL;
