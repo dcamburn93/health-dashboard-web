@@ -1044,6 +1044,7 @@ async function loadAll() {
 
   loadWeather();
   loadSports();
+  loadRaceCountdown();
   loadTrainingLoad();
   loadSpotify();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
