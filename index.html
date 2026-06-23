@@ -299,7 +299,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 
   
   <!-- Training Load Card -->
-  <div class="card" onclick="openTrainingLoadModal()" style="cursor:pointer;">
+  <div class="card" onclick="openModal('trainingload')" style="cursor:pointer;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div class="card-label">Training Load</div>
       <div class="card-chevron">›</div>
@@ -1827,11 +1827,11 @@ setInterval(loadAll, 5*60*1000);
 </script>
 
     <!-- Training Load Modal -->
-    <div id="trainingLoadModal" class="modal" onclick="if(event.target===this)closeTrainingLoadModal()">
+    <div id="modal-trainingload" class="modal" onclick="if(event.target===this)closeTrainingLoadModal()">
       <div class="modal-content" style="max-width:680px;">
         <div class="modal-header">
           <span class="modal-title">Training Load Trend</span>
-          <button class="modal-close" onclick="closeTrainingLoadModal()">✕</button>
+          <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
         <div style="display:flex;gap:10px;margin:12px 0;">
           <div style="flex:1;background:rgba(0,0,0,.06);border-radius:10px;padding:10px;text-align:center;">
