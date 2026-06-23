@@ -1101,6 +1101,7 @@ function openModal(type) {
   document.getElementById('overlay').classList.add('open');
   document.querySelectorAll('.modal').forEach(m=>m.classList.remove('open'));
   document.getElementById('modal-'+type).classList.add('open');
+  if (type === 'trainingload') renderTrainingLoadModal();
 
   const td = todayStr();
   const days7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
@@ -1732,7 +1733,7 @@ setInterval(loadAll, 5*60*1000);
     }
   }
 
-  function openTrainingLoadModal() {
+  function renderTrainingLoadModal() {
     document.getElementById('trainingLoadModal').style.display = 'flex';
     const d = window._tlData;
     if (!d) return;
