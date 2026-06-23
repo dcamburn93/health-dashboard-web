@@ -18,7 +18,6 @@ Deno.serve(async (req) => {
     const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10)
     const since120 = new Date(Date.now() - 120 * 864e5).toISOString().slice(0, 10)
 
-    // Fetch data in parallel
     const [todayWorkouts, lastSleep, recentWorkouts, bodyMetrics] = await Promise.all([
       supabase.from('workouts').select('name,sport_type,distance,moving_time,relative_effort').eq('date', today),
       supabase.from('sleep').select('duration_h,deep_h,rem_h').eq('date', yesterday).single(),
@@ -26,7 +25,6 @@ Deno.serve(async (req) => {
       supabase.from('body_metrics').select('weight_kg,resting_hr').order('date', { ascending: false }).limit(1).single(),
     ])
 
-    // Compute ATL/CTL/TSB
     const loadMap: Record<string, number> = {}
     recentWorkouts.data?.forEach(w => {
       loadMap[w.date] = (loadMap[w.date] || 0) + (w.relative_effort || 0)
@@ -40,7 +38,6 @@ Deno.serve(async (req) => {
     })
     const tsb = Math.round(ctl - atl)
 
-    // Format today's workouts
     const todayDone = todayWorkouts.data?.map(w => {
       const dist = w.distance ? (w.distance / 1609).toFixed(1) + ' mi' : ''
       const mins = w.moving_time ? Math.round(w.moving_time / 60) + ' min' : ''
@@ -64,11 +61,18 @@ Current data:
 
 Write a single short paragraph (2-3 sentences max) with a personalized insight or recommendation for Danny today. Be specific, encouraging, and reference his actual data. Sound like a knowledgeable coach, not a robot. Don't start with "Great" or "Hey". Don't mention TSB/CTL/ATL by name.`
 
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!apiKey) {
+      return new Response(JSON.stringify({ insight: 'Error: ANTHROPIC_API_KEY not set' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
@@ -79,6 +83,13 @@ Write a single short paragraph (2-3 sentences max) with a personalized insight o
     })
 
     const anthropicData = await anthropicRes.json()
+    
+    if (anthropicData.error) {
+      return new Response(JSON.stringify({ insight: 'API error: ' + anthropicData.error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const insight = anthropicData.content?.[0]?.text || 'Unable to generate insight.'
 
     return new Response(JSON.stringify({ insight }), {
@@ -86,7 +97,7 @@ Write a single short paragraph (2-3 sentences max) with a personalized insight o
     })
 
   } catch (e) {
-    return new Response(JSON.stringify({ insight: 'Unable to load insight right now.' }), {
+    return new Response(JSON.stringify({ insight: 'Error: ' + e.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

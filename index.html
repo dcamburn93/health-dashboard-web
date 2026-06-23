@@ -231,12 +231,6 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <div style="margin-top:12px" id="weather-sun-arc"></div>
 </div>
 
-<!-- AI INSIGHT CARD -->
-<div id="ai-insight-card" style="margin:0 16px 10px;background:var(--card);border-radius:18px;padding:16px 18px;border:1px solid rgba(255,255,255,0.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
-  <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--ink3);margin-bottom:8px;">COACH INSIGHT</div>
-  <div id="ai-insight-text" style="font-size:14px;color:var(--ink);line-height:1.6;">Loading insight...</div>
-</div>
-
 <div class="cards">
   <!-- SLEEP -->
   <div class="card" onclick="openModal('sleep')">
@@ -1039,7 +1033,6 @@ async function loadAll() {
 
   loadWeather();
   loadRaceCountdown();
-  loadAIInsight();
   loadTrainingLoad();
   loadSpotify();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
@@ -1744,22 +1737,6 @@ setInterval(loadAll, 5*60*1000);
   // ── end Race Plan Modal ─────────────────────────────────────────────────────
 
 
-  // ── AI Insight ──────────────────────────────────────────────────────────────
-  async function loadAIInsight() {
-    try {
-      const res = await fetch('https://csylhxbnpqsfwicqrsex.supabase.co/functions/v1/ai-insight', {
-        headers: {
-          'Authorization': 'Bearer ' + KEY,
-          'Content-Type': 'application/json'
-        }
-      })
-      const data = await res.json()
-      document.getElementById('ai-insight-text').textContent = data.insight || 'No insight available.'
-    } catch(e) {
-      document.getElementById('ai-insight-text').textContent = 'Unable to load insight.'
-    }
-  }
-  // ── end AI Insight ──────────────────────────────────────────────────────────
   // ── Race Countdown ──────────────────────────────────────────────────────────
   function loadRaceCountdown() {
     const race = new Date('2027-07-19');
