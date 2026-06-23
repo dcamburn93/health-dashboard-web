@@ -195,6 +195,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .stat-key { color: var(--ink3); }
 .stat-val { font-weight: 600; color: var(--ink); }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -293,6 +294,33 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
     </div>
     <div id="spotify-strip">
       <div style="font-size:12px;color:var(--ink3)">Loading...</div>
+    </div>
+  </div>
+
+  
+  <!-- Training Load Card -->
+  <div class="card" onclick="openTrainingLoadModal()" style="cursor:pointer;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div class="card-label">Training Load</div>
+      <div class="card-chevron">›</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;">Fitness</div>
+        <div id="tlCTL" style="font-size:22px;font-family:'DM Serif Display',serif;letter-spacing:-1px;color:var(--ink);">—</div>
+      </div>
+      <div style="flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;">Fatigue</div>
+        <div id="tlATL" style="font-size:22px;font-family:'DM Serif Display',serif;letter-spacing:-1px;color:var(--ink);">—</div>
+      </div>
+      <div style="flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;">Form</div>
+        <div id="tlTSB" style="font-size:22px;font-family:'DM Serif Display',serif;letter-spacing:-1px;">—</div>
+      </div>
+      <div style="flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;">Status</div>
+        <div id="tlStatus" style="font-size:11px;font-weight:600;margin-top:5px;">—</div>
+      </div>
     </div>
   </div>
 
@@ -1622,6 +1650,211 @@ function closeModal() {
 
 loadAll();
 setInterval(loadAll, 5*60*1000);
+
+  // ── Training Load (ATL / CTL / TSB) ────────────────────────────────────────
+  let tlChartInstance = null;
+
+  async function loadTrainingLoad() {
+    try {
+      // Fetch last 120 days of workouts; we need ~90 days to properly seed CTL
+      const since = new Date();
+      since.setDate(since.getDate() - 120);
+      const sinceStr = since.toISOString().slice(0, 10);
+
+      const data = await q('workouts',
+        'select=date,relative_effort&date=gte.' + sinceStr + '&order=date.asc&limit=500'
+      );
+
+      if (!data || data.length === 0) return;
+
+      // Build daily load map
+      const loadMap = {};
+      data.forEach(w => {
+        const re = w.relative_effort || 0;
+        loadMap[w.date] = (loadMap[w.date] || 0) + re;
+      });
+
+      // Generate day array
+      const start = new Date(sinceStr);
+      const today = new Date();
+      const days = [];
+      for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d).toISOString().slice(0, 10));
+      }
+
+      // EMA constants
+      const k7  = 2 / (7 + 1);   // ATL
+      const k42 = 2 / (42 + 1);  // CTL
+
+      let atl = 0, ctl = 0;
+      const atlArr = [], ctlArr = [], tsbArr = [], labels = [];
+
+      days.forEach((day, i) => {
+        const load = loadMap[day] || 0;
+        atl = load * k7  + atl * (1 - k7);
+        ctl = load * k42 + ctl * (1 - k42);
+        const tsb = ctl - atl;
+        atlArr.push(Math.round(atl));
+        ctlArr.push(Math.round(ctl));
+        tsbArr.push(Math.round(tsb));
+        // Label every 2 weeks
+        labels.push((i % 14 === 0) ? day.slice(5) : '');
+      });
+
+      const lastATL = atlArr[atlArr.length - 1];
+      const lastCTL = ctlArr[ctlArr.length - 1];
+      const lastTSB = tsbArr[tsbArr.length - 1];
+
+      // Status label
+      let status, statusColor;
+      if      (lastTSB >  15) { status = '🟢 Peaked';       statusColor = '#27ae60'; }
+      else if (lastTSB >   5) { status = '🟢 Good form';    statusColor = '#27ae60'; }
+      else if (lastTSB >  -5) { status = '🟡 Neutral';      statusColor = '#e67e22'; }
+      else if (lastTSB > -15) { status = '🟠 Building';     statusColor = '#e67e22'; }
+      else                    { status = '🔴 High fatigue';  statusColor = '#c0392b'; }
+
+      const tsbSign = lastTSB >= 0 ? '+' : '';
+
+      // Update summary card
+      document.getElementById('tlCTL').textContent    = lastCTL;
+      document.getElementById('tlATL').textContent    = lastATL;
+      document.getElementById('tlTSB').textContent    = tsbSign + lastTSB;
+      document.getElementById('tlTSB').style.color    = lastTSB >= 0 ? '#27ae60' : '#c0392b';
+      document.getElementById('tlStatus').textContent = status;
+      document.getElementById('tlStatus').style.color = statusColor;
+
+      // Store for modal
+      window._tlData = { atlArr, ctlArr, tsbArr, labels, lastATL, lastCTL, lastTSB, tsbSign, status, statusColor };
+
+    } catch(e) {
+      console.error('Training load error:', e);
+    }
+  }
+
+  function openTrainingLoadModal() {
+    document.getElementById('trainingLoadModal').style.display = 'flex';
+    const d = window._tlData;
+    if (!d) return;
+
+    document.getElementById('modalCTL').textContent = d.lastCTL;
+    document.getElementById('modalATL').textContent = d.lastATL;
+    document.getElementById('modalTSB').textContent = d.tsbSign + d.lastTSB;
+    document.getElementById('modalTSB').style.color = d.lastTSB >= 0 ? '#27ae60' : '#c0392b';
+
+    // Build chart (destroy old if re-opened)
+    if (tlChartInstance) { tlChartInstance.destroy(); tlChartInstance = null; }
+
+    const isDark = document.documentElement.classList.contains('dark') ||
+                   window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+    const tickColor = isDark ? '#999' : '#888';
+
+    tlChartInstance = new Chart(document.getElementById('tlChart'), {
+      type: 'line',
+      data: {
+        labels: d.labels,
+        datasets: [
+          {
+            label: 'Fitness (CTL)',
+            data: d.ctlArr,
+            borderColor: '#3266ad',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.3,
+            fill: false
+          },
+          {
+            label: 'Fatigue (ATL)',
+            data: d.atlArr,
+            borderColor: '#c0392b',
+            borderWidth: 1.5,
+            borderDash: [4, 3],
+            pointRadius: 0,
+            tension: 0.3,
+            fill: false
+          },
+          {
+            label: 'Form (TSB)',
+            data: d.tsbArr,
+            borderColor: '#27ae60',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.3,
+            fill: {
+              target: { value: 0 },
+              above: 'rgba(39,174,96,0.10)',
+              below: 'rgba(192,57,43,0.07)'
+            }
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const v = ctx.raw;
+                const sign = ctx.datasetIndex === 2 && v >= 0 ? '+' : '';
+                return ctx.dataset.label + ': ' + sign + v;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor },
+            ticks: { color: tickColor, font: { size: 10 }, maxRotation: 0 }
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: tickColor, font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
+
+  function closeTrainingLoadModal() {
+    document.getElementById('trainingLoadModal').style.display = 'none';
+  }
+  // ── end Training Load ───────────────────────────────────────────────────────
+
 </script>
+
+    <!-- Training Load Modal -->
+    <div id="trainingLoadModal" class="modal" onclick="if(event.target===this)closeTrainingLoadModal()">
+      <div class="modal-content" style="max-width:680px;">
+        <div class="modal-header">
+          <span class="modal-title">Training Load Trend</span>
+          <button class="modal-close" onclick="closeTrainingLoadModal()">✕</button>
+        </div>
+        <div style="display:flex;gap:10px;margin:12px 0;">
+          <div style="flex:1;background:rgba(0,0,0,.06);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:11px;opacity:.6;">Fitness (CTL)</div>
+            <div id="modalCTL" style="font-size:24px;font-weight:500;">—</div>
+          </div>
+          <div style="flex:1;background:rgba(0,0,0,.06);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:11px;opacity:.6;">Fatigue (ATL)</div>
+            <div id="modalATL" style="font-size:24px;font-weight:500;">—</div>
+          </div>
+          <div style="flex:1;background:rgba(0,0,0,.06);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:11px;opacity:.6;">Form (TSB)</div>
+            <div id="modalTSB" style="font-size:24px;font-weight:500;">—</div>
+          </div>
+        </div>
+        <div style="position:relative;height:260px;margin:8px 0;">
+          <canvas id="tlChart" role="img" aria-label="Training load trend chart"></canvas>
+        </div>
+        <p style="font-size:10px;opacity:.4;margin:6px 0 0;">
+          CTL = 42-day fitness, ATL = 7-day fatigue, TSB = CTL − ATL (form).<br>
+          Based on Strava relative effort scores from your workouts table.
+        </p>
+      </div>
+    </div>
+
 </body>
 </html>
