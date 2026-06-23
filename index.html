@@ -1721,28 +1721,35 @@ setInterval(loadAll, 5*60*1000);
 
   function renderRacePlan() {
     const now = new Date();
-    const currentMonth = now.toLocaleDateString('en-US', { month:'short', year:'numeric' });
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const currentMonth = monthNames[now.getMonth()] + ' ' + now.getFullYear();
     const list = document.getElementById('raceplanList');
     if (!list) return;
-
-    list.innerHTML = RACE_PLAN.map(m => {
+    const phaseColors = {
+      'Base':'#3a7d5a','Build 1':'#2d6a9f','Recovery':'#888',
+      'Build 2':'#1a5276','Peak':'#922b21','Taper':'#7d6608','Race':'#6c3483'
+    };
+    let out = '';
+    RACE_PLAN.forEach(function(m) {
       const isCurrent = m.month === currentMonth;
-      const color = PHASE_COLORS[m.phase] || '#888';
-      return \`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.06);\${isCurrent ? 'background:rgba(58,125,90,0.07);border-radius:8px;padding:10px 8px;margin:0 -8px;' : ''}">
-        <div style="width:68px;flex-shrink:0;">
-          <div style="font-size:12px;font-weight:\${isCurrent?700:500};color:var(--ink);">\${m.month}</div>
-          <div style="font-size:10px;font-weight:600;color:\${color};margin-top:2px;">\${m.phase}</div>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">\${m.focus}\${isCurrent ? ' ← you are here' : ''}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🏊 \${m.swim}</span>
-            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🚴 \${m.bike}</span>
-            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🏃 \${m.run}</span>
-          </div>
-        </div>
-      </div>\`;
-    }).join('');
+      const color = phaseColors[m.phase] || '#888';
+      const bg = isCurrent ? 'background:rgba(58,125,90,0.07);border-radius:8px;padding:10px 8px;margin:0 -8px;' : '';
+      const here = isCurrent ? ' <- you are here' : '';
+      const fw = isCurrent ? '700' : '500';
+      out += '<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.06);' + bg + '">';
+      out += '<div style="width:68px;flex-shrink:0;">';
+      out += '<div style="font-size:12px;font-weight:' + fw + ';color:var(--ink);">' + m.month + '</div>';
+      out += '<div style="font-size:10px;font-weight:600;color:' + color + ';margin-top:2px;">' + m.phase + '</div>';
+      out += '</div><div style="flex:1;">';
+      out += '<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">' + m.focus + here + '</div>';
+      out += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+      out += '<span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">Swim: ' + m.swim + '</span>';
+      out += '<span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">Bike: ' + m.bike + '</span>';
+      out += '<span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">Run: ' + m.run + '</span>';
+      out += '</div></div></div>';
+    });
+    list.innerHTML = out;
+  }
   }
   // ── end Race Plan Modal ─────────────────────────────────────────────────────
 
