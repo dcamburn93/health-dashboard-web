@@ -231,11 +231,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   <div style="margin-top:12px" id="weather-sun-arc"></div>
 </div>
 
-<!-- BAY AREA SPORTS -->
-<div id="sports-strip" onclick="openModal('sports')" style="margin:0 16px 10px;background:var(--card);border-radius:14px;padding:12px 16px;border:1px solid var(--rule);cursor:pointer">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3)">Bay Area Sports</div>
-    <div style="color:var(--ink3);font-size:14px">›</div>
+<div style="color:var(--ink3);font-size:14px">›</div>
   </div>
   <div id="sports-content" style="margin-top:8px">
     <div style="font-size:12px;color:var(--ink3)">Loading...</div>
@@ -1043,7 +1039,6 @@ async function loadAll() {
   const ws = weekStart();
 
   loadWeather();
-  loadSports();
   loadRaceCountdown();
   loadTrainingLoad();
   loadSpotify();
