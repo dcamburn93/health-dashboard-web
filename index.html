@@ -1010,6 +1010,7 @@ async function loadAll() {
 
   loadWeather();
   loadSports();
+  loadTrainingLoad();
   loadSpotify();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
   document.getElementById('refresh-time').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
