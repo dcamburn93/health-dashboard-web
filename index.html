@@ -1721,28 +1721,30 @@ setInterval(loadAll, 5*60*1000);
 
   function renderRacePlan() {
     const now = new Date();
-    const currentMonth = now.toLocaleDateString('en-US', { month:'short', year:'numeric' });
+    const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const cur = mn[now.getMonth()] + " " + now.getFullYear();
     const list = document.getElementById('raceplanList');
     if (!list) return;
-
-    list.innerHTML = RACE_PLAN.map(m => {
-      const isCurrent = m.month === currentMonth;
-      const color = PHASE_COLORS[m.phase] || '#888';
-      return \`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.06);\${isCurrent ? 'background:rgba(58,125,90,0.07);border-radius:8px;padding:10px 8px;margin:0 -8px;' : ''}">
-        <div style="width:68px;flex-shrink:0;">
-          <div style="font-size:12px;font-weight:\${isCurrent?700:500};color:var(--ink);">\${m.month}</div>
-          <div style="font-size:10px;font-weight:600;color:\${color};margin-top:2px;">\${m.phase}</div>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">\${m.focus}\${isCurrent ? ' ← you are here' : ''}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🏊 \${m.swim}</span>
-            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🚴 \${m.bike}</span>
-            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🏃 \${m.run}</span>
-          </div>
-        </div>
-      </div>\`;
-    }).join('');
+    const pc = {'Base':'#3a7d5a','Build 1':'#2d6a9f','Recovery':'#888','Build 2':'#1a5276','Peak':'#922b21','Taper':'#7d6608','Race':'#6c3483'};
+    let o = '';
+    RACE_PLAN.forEach(function(m) {
+      const ic = m.month === cur;
+      const cl = pc[m.phase] || '#888';
+      const bg = ic ? 'background:rgba(58,125,90,0.07);border-radius:8px;padding:10px 8px;margin:0 -8px;' : '';
+      const fw = ic ? '700' : '500';
+      const hr = ic ? ' &lt;- you are here' : '';
+      o += '<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.06);' + bg + '">'
+        + '<div style="width:68px;flex-shrink:0;">'
+        + '<div style="font-size:12px;font-weight:' + fw + ';color:var(--ink);">' + m.month + '</div>'
+        + '<div style="font-size:10px;font-weight:600;color:' + cl + ';margin-top:2px;">' + m.phase + '</div></div>'
+        + '<div style="flex:1;"><div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">' + m.focus + hr + '</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        + '<span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">Swim: ' + m.swim + '</span>'
+        + '<span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">Bike: ' + m.bike + '</span>'
+        + '<span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">Run: ' + m.run + '</span>'
+        + '</div></div></div>';
+    });
+    list.innerHTML = o;
   }
   // ── end Race Plan Modal ─────────────────────────────────────────────────────
 
