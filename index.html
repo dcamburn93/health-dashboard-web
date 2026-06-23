@@ -298,6 +298,40 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   </div>
 
   
+  
+  <!-- Race Countdown Card -->
+  <div class="card" style="text-align:center;">
+    <div class="card-label">Ironman 70.3 Salem</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:8px;">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="7"/>
+        <circle id="raceRingFg" cx="45" cy="45" r="38" fill="none" stroke="#3a7d5a" stroke-width="7"
+          stroke-linecap="round" stroke-dasharray="239" stroke-dashoffset="239"
+          transform="rotate(-90 45 45)" style="transition:stroke-dashoffset 1s ease;"/>
+        <text x="45" y="49" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)" font-family="DM Serif Display,serif" id="raceRingPct">—</text>
+      </svg>
+      <div>
+        <div style="font-size:42px;font-family:'DM Serif Display',serif;letter-spacing:-2px;line-height:1;color:var(--ink);" id="raceDays">—</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:2px;">days to go</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:6px;" id="raceDate">July 19, 2027</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(0,0,0,0.05);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-around;">
+      <div style="text-align:center;">
+        <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;">Weeks out</div>
+        <div style="font-size:16px;font-weight:600;color:var(--ink);" id="raceWeeks">—</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;">Build started</div>
+        <div style="font-size:16px;font-weight:600;color:var(--ink);">May 18</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;">Complete</div>
+        <div style="font-size:16px;font-weight:600;color:var(--ink);" id="racePct">—</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Training Load Card -->
   <div class="card" onclick="openModal('trainingload')" style="cursor:pointer;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -1652,6 +1686,33 @@ function closeModal() {
 
 loadAll();
 setInterval(loadAll, 5*60*1000);
+
+
+  // ── Race Countdown ──────────────────────────────────────────────────────────
+  function loadRaceCountdown() {
+    const race = new Date('2027-07-19');
+    const buildStart = new Date('2026-05-18');
+    const now = new Date();
+
+    const msPerDay = 864e5;
+    const daysToRace = Math.ceil((race - now) / msPerDay);
+    const weeksToRace = Math.floor(daysToRace / 7);
+    const totalBuildDays = Math.ceil((race - buildStart) / msPerDay);
+    const daysIntoBuil = Math.ceil((now - buildStart) / msPerDay);
+    const pct = Math.min(100, Math.max(0, Math.round(daysIntoBuil / totalBuildDays * 100)));
+
+    document.getElementById('raceDays').textContent = daysToRace.toLocaleString();
+    document.getElementById('raceWeeks').textContent = weeksToRace;
+    document.getElementById('racePct').textContent = pct + '%';
+
+    // Ring: 238.76 = 2*pi*38
+    const circumference = 2 * Math.PI * 38;
+    const offset = circumference * (1 - pct / 100);
+    document.getElementById('raceRingFg').style.strokeDasharray = circumference;
+    document.getElementById('raceRingFg').style.strokeDashoffset = offset;
+    document.getElementById('raceRingPct').textContent = pct + '%';
+  }
+  // ── end Race Countdown ──────────────────────────────────────────────────────
 
   // ── Training Load (ATL / CTL / TSB) ────────────────────────────────────────
   let tlChartInstance = null;
