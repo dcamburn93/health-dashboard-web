@@ -300,7 +300,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   
   
   <!-- Race Countdown Card -->
-  <div class="card" style="text-align:center;">
+  <div class="card" style="text-align:center;cursor:pointer;" onclick="openModal('raceplan')">
     <div class="card-label">Ironman 70.3 Salem</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:8px;">
       <svg width="90" height="90" viewBox="0 0 90 90">
@@ -1137,6 +1137,7 @@ function openModal(type) {
   document.querySelectorAll('.modal').forEach(m=>m.classList.remove('open'));
   document.getElementById('modal-'+type).classList.add('open');
   if (type === 'trainingload') renderTrainingLoadModal();
+  if (type === 'raceplan') renderRacePlan();
 
   const td = todayStr();
   const days7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
@@ -1689,6 +1690,62 @@ loadAll();
 setInterval(loadAll, 5*60*1000);
 
 
+
+  // ── Race Plan Modal ─────────────────────────────────────────────────────────
+  const RACE_PLAN = [
+    { month:'Jun 2026', phase:'Base',     swim:'4–6k yd/wk',  bike:'40–60 mi/wk',  run:'15–20 mi/wk', focus:'Aerobic base, consistency' },
+    { month:'Jul 2026', phase:'Base',     swim:'6–8k yd/wk',  bike:'60–80 mi/wk',  run:'20–25 mi/wk', focus:'Build volume, easy effort' },
+    { month:'Aug 2026', phase:'Base',     swim:'8–10k yd/wk', bike:'80–100 mi/wk', run:'25–30 mi/wk', focus:'Long ride + long run each week' },
+    { month:'Sep 2026', phase:'Build 1',  swim:'8–10k yd/wk', bike:'90–110 mi/wk', run:'28–33 mi/wk', focus:'Introduce tempo, brick workouts' },
+    { month:'Oct 2026', phase:'Build 1',  swim:'10k yd/wk',   bike:'100–120 mi/wk',run:'30–35 mi/wk', focus:'Race-pace intervals begin' },
+    { month:'Nov 2026', phase:'Build 1',  swim:'10k yd/wk',   bike:'100–120 mi/wk',run:'30–35 mi/wk', focus:'Sustain load, add intensity' },
+    { month:'Dec 2026', phase:'Recovery', swim:'4–6k yd/wk',  bike:'40–60 mi/wk',  run:'15–20 mi/wk', focus:'Active recovery, recharge' },
+    { month:'Jan 2027', phase:'Build 2',  swim:'10k yd/wk',   bike:'110–130 mi/wk',run:'32–38 mi/wk', focus:'Race-specific intensity, bricks' },
+    { month:'Feb 2027', phase:'Build 2',  swim:'10–12k yd/wk',bike:'120–140 mi/wk',run:'35–40 mi/wk', focus:'Long bricks, open water prep' },
+    { month:'Mar 2027', phase:'Build 2',  swim:'10–12k yd/wk',bike:'120–140 mi/wk',run:'35–40 mi/wk', focus:'Peak volume, race simulations' },
+    { month:'Apr 2027', phase:'Peak',     swim:'12k yd/wk',   bike:'140–160 mi/wk',run:'38–44 mi/wk', focus:'Highest load, tune-up race' },
+    { month:'May 2027', phase:'Peak',     swim:'12k yd/wk',   bike:'130–150 mi/wk',run:'35–40 mi/wk', focus:'Maintain fitness, sharpen' },
+    { month:'Jun 2027', phase:'Taper',    swim:'6–8k yd/wk',  bike:'60–80 mi/wk',  run:'20–25 mi/wk', focus:'Reduce volume, keep intensity' },
+    { month:'Jul 2027', phase:'Race',     swim:'Race week',    bike:'Race week',     run:'Race week',   focus:'🏁 Jul 19 — Ironman 70.3 Salem' },
+  ];
+
+  const PHASE_COLORS = {
+    'Base':     '#3a7d5a',
+    'Build 1':  '#2d6a9f',
+    'Recovery': '#888',
+    'Build 2':  '#1a5276',
+    'Peak':     '#922b21',
+    'Taper':    '#7d6608',
+    'Race':     '#6c3483',
+  };
+
+  function renderRacePlan() {
+    const now = new Date();
+    const currentMonth = now.toLocaleDateString('en-US', { month:'short', year:'numeric' });
+    const list = document.getElementById('raceplanList');
+    if (!list) return;
+
+    list.innerHTML = RACE_PLAN.map(m => {
+      const isCurrent = m.month === currentMonth;
+      const color = PHASE_COLORS[m.phase] || '#888';
+      return \`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.06);\${isCurrent ? 'background:rgba(58,125,90,0.07);border-radius:8px;padding:10px 8px;margin:0 -8px;' : ''}">
+        <div style="width:68px;flex-shrink:0;">
+          <div style="font-size:12px;font-weight:\${isCurrent?700:500};color:var(--ink);">\${m.month}</div>
+          <div style="font-size:10px;font-weight:600;color:\${color};margin-top:2px;">\${m.phase}</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">\${m.focus}\${isCurrent ? ' ← you are here' : ''}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🏊 \${m.swim}</span>
+            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🚴 \${m.bike}</span>
+            <span style="font-size:10px;background:rgba(0,0,0,0.06);border-radius:4px;padding:2px 6px;">🏃 \${m.run}</span>
+          </div>
+        </div>
+      </div>\`;
+    }).join('');
+  }
+  // ── end Race Plan Modal ─────────────────────────────────────────────────────
+
   // ── Race Countdown ──────────────────────────────────────────────────────────
   function loadRaceCountdown() {
     const race = new Date('2027-07-19');
@@ -1929,5 +1986,19 @@ setInterval(loadAll, 5*60*1000);
       </div>
     </div>
 
+
+  <!-- Race Plan Modal -->
+  <div id="modal-raceplan" class="modal">
+    <div class="modal-handle"></div>
+    <div style="padding:0 20px 32px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--ink3);margin-bottom:16px;">SALEM 70.3 — MONTHLY TARGETS</div>
+
+      <div id="raceplanList"></div>
+
+      <p style="font-size:10px;color:var(--ink3);margin-top:20px;">
+        Targets are guidelines. Current month is highlighted. Adjust based on recovery and life.
+      </p>
+    </div>
+  </div>
 </body>
 </html>
