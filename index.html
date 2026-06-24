@@ -383,55 +383,6 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
     <div class="today-view-week">Tap to see full week →</div>
   </div>
 
-  <!-- NUTRITION CARD -->
-  <div class="card" onclick="openModal('nutrition')" style="cursor:pointer;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-      <div class="card-label">🥗 Nutrition Today</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div id="nutrition-day-type" style="font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:rgba(59,111,232,0.15);color:#3B6FE8;text-transform:uppercase;"></div>
-        <div class="card-chevron">›</div>
-      </div>
-    </div>
-    <!-- Calories big number -->
-    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px;">
-      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:var(--ink);letter-spacing:-1.5px;line-height:1;" id="nutr-cal-val">0</div>
-      <div style="font-size:14px;color:var(--ink3);">/ <span id="nutr-cal-target">—</span> kcal</div>
-    </div>
-    <!-- Macro bars -->
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <!-- Protein -->
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#0EA5A0;">Protein</div>
-          <div style="font-size:10px;color:var(--ink3);"><span id="nutr-p-val">0</span>g / <span id="nutr-p-target">—</span>g</div>
-        </div>
-        <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
-          <div id="nutr-p-bar" style="height:100%;background:#0EA5A0;border-radius:3px;width:0%;transition:width 0.5s;"></div>
-        </div>
-      </div>
-      <!-- Carbs -->
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#D97706;">Carbs</div>
-          <div style="font-size:10px;color:var(--ink3);"><span id="nutr-c-val">0</span>g / <span id="nutr-c-target">—</span>g</div>
-        </div>
-        <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
-          <div id="nutr-c-bar" style="height:100%;background:#D97706;border-radius:3px;width:0%;transition:width 0.5s;"></div>
-        </div>
-      </div>
-      <!-- Fat -->
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#7C3AED;">Fat</div>
-          <div style="font-size:10px;color:var(--ink3);"><span id="nutr-f-val">0</span>g / <span id="nutr-f-target">—</span>g</div>
-        </div>
-        <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
-          <div id="nutr-f-bar" style="height:100%;background:#7C3AED;border-radius:3px;width:0%;transition:width 0.5s;"></div>
-        </div>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--ink3);margin-top:10px;text-align:center;" id="nutr-entry-count">No entries yet — tap to log food</div>
-  </div>
 
 </div>
 
@@ -1084,7 +1035,6 @@ async function loadAll() {
   loadRaceCountdown();
   loadTrainingLoad();
   loadSpotify();
-  loadNutrition();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
   document.getElementById('refresh-time').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 
@@ -1176,7 +1126,6 @@ function openModal(type) {
   document.getElementById('modal-'+type).classList.add('open');
   if (type === 'trainingload') renderTrainingLoadModal();
   if (type === 'raceplan') renderRacePlan();
-  if (type === 'nutrition') loadNutrition();
 
   const td = todayStr();
   const days7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
@@ -1994,204 +1943,6 @@ setInterval(loadAll, 5*60*1000);
   }
   // ── end Training Load ───────────────────────────────────────────────────────
 
-  // ── NUTRITION ────────────────────────────────────────────────────────────────
-  const NUTR_TARGETS = {
-    training: { cal: 2450, protein: 180, carbs: 270, fat: 70 },
-    rest:     { cal: 2200, protein: 175, carbs: 220, fat: 65 }
-  };
-
-  async function isTrainingDay() {
-    // Check if there's a Strava workout logged today
-    const today = todayStr();
-    try {
-      const rows = await q('workouts', `select=id&date=eq.${today}&limit=1`);
-      return Array.isArray(rows) && rows.length > 0;
-    } catch { return false; }
-  }
-
-  async function loadNutrition() {
-    const today = todayStr();
-    const training = await isTrainingDay();
-    const targets = training ? NUTR_TARGETS.training : NUTR_TARGETS.rest;
-    const dayType = training ? 'Training Day' : 'Rest Day';
-
-    // Fetch today's logs
-    let logs = [];
-    try {
-      logs = await q('nutrition_logs', `select=*&date=eq.${today}&order=logged_at.asc`);
-      if (!Array.isArray(logs)) logs = [];
-    } catch {}
-
-    const totals = logs.reduce((acc, r) => {
-      acc.cal += r.calories || 0;
-      acc.protein += r.protein_g || 0;
-      acc.carbs += r.carbs_g || 0;
-      acc.fat += r.fat_g || 0;
-      return acc;
-    }, { cal: 0, protein: 0, carbs: 0, fat: 0 });
-
-    // Update summary card
-    document.getElementById('nutr-cal-val').textContent = Math.round(totals.cal);
-    document.getElementById('nutr-cal-target').textContent = targets.cal;
-    document.getElementById('nutr-p-val').textContent = Math.round(totals.protein);
-    document.getElementById('nutr-p-target').textContent = targets.protein;
-    document.getElementById('nutr-c-val').textContent = Math.round(totals.carbs);
-    document.getElementById('nutr-c-target').textContent = targets.carbs;
-    document.getElementById('nutr-f-val').textContent = Math.round(totals.fat);
-    document.getElementById('nutr-f-target').textContent = targets.fat;
-
-    const pct = (v, t) => Math.min(100, Math.round(v / t * 100)) + '%';
-    document.getElementById('nutr-p-bar').style.width = pct(totals.protein, targets.protein);
-    document.getElementById('nutr-c-bar').style.width = pct(totals.carbs, targets.carbs);
-    document.getElementById('nutr-f-bar').style.width = pct(totals.fat, targets.fat);
-
-    document.getElementById('nutrition-day-type').textContent = dayType;
-    document.getElementById('nutr-entry-count').textContent =
-      logs.length === 0 ? 'No entries yet — tap to log food'
-      : `${logs.length} entr${logs.length === 1 ? 'y' : 'ies'} logged`;
-
-    // Update modal
-    document.getElementById('nutr-modal-day-type').textContent = dayType;
-    document.getElementById('nutr-modal-date').textContent = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-    document.getElementById('nm-cal').textContent = Math.round(totals.cal);
-    document.getElementById('nm-cal-t').textContent = targets.cal;
-    document.getElementById('nm-p').textContent = Math.round(totals.protein);
-    document.getElementById('nm-p-t').textContent = targets.protein;
-    document.getElementById('nm-c').textContent = Math.round(totals.carbs);
-    document.getElementById('nm-c-t').textContent = targets.carbs;
-    document.getElementById('nm-f').textContent = Math.round(totals.fat);
-    document.getElementById('nm-f-t').textContent = targets.fat;
-
-    renderNutrLog(logs);
-
-    window._nutrTargets = targets;
-    window._nutrLogs = logs;
-  }
-
-  function renderNutrLog(logs) {
-    const el = document.getElementById('nutr-log-list');
-    if (!logs || logs.length === 0) {
-      el.innerHTML = '<div style="font-size:13px;color:var(--ink3);text-align:center;padding:20px 0;">No entries yet</div>';
-      return;
-    }
-    el.innerHTML = logs.map(r => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--rule);">
-        <div>
-          <div style="font-size:13px;font-weight:500;color:var(--ink);">${r.food_name}</div>
-          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${r.serving_size_g ? r.serving_size_g + 'g · ' : ''}${Math.round(r.protein_g||0)}p / ${Math.round(r.carbs_g||0)}c / ${Math.round(r.fat_g||0)}f</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="font-size:13px;font-weight:600;color:var(--ink);">${Math.round(r.calories||0)} kcal</div>
-          <button onclick="deleteNutrEntry('${r.id}')" style="background:none;border:none;color:var(--ink3);font-size:18px;cursor:pointer;padding:0;line-height:1;">×</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  async function searchFDA() {
-    const query = document.getElementById('nutr-search-input').value.trim();
-    if (!query) return;
-    const resultsEl = document.getElementById('nutr-search-results');
-    resultsEl.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">Searching...</div>';
-
-    try {
-      const resp = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&dataType=SR%20Legacy,Foundation,Branded&pageSize=6&api_key=DEMO_KEY`);
-      const data = await resp.json();
-      const foods = (data.foods || []).slice(0, 6);
-
-      if (!foods.length) {
-        resultsEl.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">No results found</div>';
-        return;
-      }
-
-      resultsEl.innerHTML = foods.map((f, i) => {
-        const nutr = {};
-        (f.foodNutrients || []).forEach(n => {
-          if (n.nutrientName?.includes('Energy') && n.unitName === 'KCAL') nutr.cal = n.value;
-          if (n.nutrientName?.includes('Protein')) nutr.protein = n.value;
-          if (n.nutrientName?.includes('Carbohydrate')) nutr.carbs = n.value;
-          if (n.nutrientName?.includes('Total lipid') || n.nutrientName?.includes('Fat')) nutr.fat = n.value;
-        });
-        const desc = f.description?.length > 42 ? f.description.slice(0, 42) + '…' : f.description;
-        return `
-          <div style="padding:10px 12px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,0.07);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:500;color:var(--ink);line-height:1.3;">${desc}</div>
-                <div style="font-size:10px;color:var(--ink3);margin-top:3px;">per 100g · ${Math.round(nutr.cal||0)} kcal · ${Math.round(nutr.protein||0)}p / ${Math.round(nutr.carbs||0)}c / ${Math.round(nutr.fat||0)}f</div>
-              </div>
-              <button onclick="showServingInput(${i})"
-                style="background:#c9a84c;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#1a1a2a;cursor:pointer;white-space:nowrap;flex-shrink:0;">
-                + Add
-              </button>
-            </div>
-            <div id="serving-input-${i}" style="display:none;margin-top:8px;display:none;">
-              <div style="display:flex;gap:6px;align-items:center;">
-                <input type="number" id="serving-g-${i}" placeholder="grams (e.g. 150)"
-                  style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--ink);font-family:'DM Sans',sans-serif;outline:none;"
-                  value="100"
-                />
-                <button onclick="logFoodEntry(${JSON.stringify(f.fdcId)}, ${JSON.stringify(desc)}, ${nutr.cal||0}, ${nutr.protein||0}, ${nutr.carbs||0}, ${nutr.fat||0}, ${i})"
-                  style="background:#0EA5A0;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;white-space:nowrap;">
-                  Log it
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    } catch(e) {
-      resultsEl.innerHTML = '<div style="font-size:12px;color:#c0392b;padding:8px 0;">Search failed — check connection</div>';
-    }
-  }
-
-  function showServingInput(i) {
-    const el = document.getElementById(`serving-input-${i}`);
-    if (el) { el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
-  }
-
-  async function logFoodEntry(fdcId, name, calPer100, proteinPer100, carbsPer100, fatPer100, idx) {
-    const grams = parseFloat(document.getElementById(`serving-g-${idx}`)?.value) || 100;
-    const scale = grams / 100;
-    const today = todayStr();
-
-    const entry = {
-      date: today,
-      food_name: name,
-      fda_fdc_id: String(fdcId),
-      serving_size_g: grams,
-      calories: Math.round(calPer100 * scale * 10) / 10,
-      protein_g: Math.round(proteinPer100 * scale * 10) / 10,
-      carbs_g: Math.round(carbsPer100 * scale * 10) / 10,
-      fat_g: Math.round(fatPer100 * scale * 10) / 10,
-    };
-
-    try {
-      const resp = await fetch(`${SB}/rest/v1/nutrition_logs`, {
-        method: 'POST',
-        headers: { apikey: KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify(entry)
-      });
-      if (!resp.ok) throw new Error(await resp.text());
-      document.getElementById('nutr-search-input').value = '';
-      document.getElementById('nutr-search-results').innerHTML = '<div style="font-size:12px;color:#27ae60;padding:6px 0;">✓ Logged!</div>';
-      await loadNutrition();
-    } catch(e) {
-      alert('Failed to save: ' + e.message);
-    }
-  }
-
-  async function deleteNutrEntry(id) {
-    try {
-      await fetch(`${SB}/rest/v1/nutrition_logs?id=eq.${id}`, {
-        method: 'DELETE',
-        headers: { apikey: KEY }
-      });
-      await loadNutrition();
-    } catch(e) { alert('Delete failed'); }
-  }
-  // ── end Nutrition ────────────────────────────────────────────────────────────
-
 </script>
 
     <!-- Training Load Modal -->
@@ -2225,60 +1976,6 @@ setInterval(loadAll, 5*60*1000);
         </p>
       </div>
     </div>
-
-
-  <!-- NUTRITION MODAL -->
-  <div class="modal" id="modal-nutrition">
-    <div class="modal-handle"></div>
-    <div style="padding:0 0 32px;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-        <div class="modal-title">Nutrition</div>
-        <div id="nutr-modal-day-type" style="font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:10px;background:rgba(59,111,232,0.15);color:#3B6FE8;text-transform:uppercase;"></div>
-      </div>
-      <div style="font-size:12px;color:var(--ink3);margin-bottom:20px;" id="nutr-modal-date"></div>
-
-      <div style="display:flex;gap:10px;margin-bottom:20px;">
-        <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(255,255,255,0.07);">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);letter-spacing:-1px;" id="nm-cal">0</div>
-          <div style="font-size:9px;color:var(--ink3);font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;">kcal</div>
-          <div style="font-size:10px;color:var(--ink3);margin-top:4px;">of <span id="nm-cal-t">—</span></div>
-        </div>
-        <div style="flex:1;background:rgba(14,165,160,0.08);border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(14,165,160,0.2);">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:#0EA5A0;letter-spacing:-1px;" id="nm-p">0</div>
-          <div style="font-size:9px;color:#0EA5A0;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;">protein</div>
-          <div style="font-size:10px;color:var(--ink3);margin-top:4px;">of <span id="nm-p-t">—</span>g</div>
-        </div>
-        <div style="flex:1;background:rgba(217,119,6,0.08);border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(217,119,6,0.2);">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:#D97706;letter-spacing:-1px;" id="nm-c">0</div>
-          <div style="font-size:9px;color:#D97706;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;">carbs</div>
-          <div style="font-size:10px;color:var(--ink3);margin-top:4px;">of <span id="nm-c-t">—</span>g</div>
-        </div>
-        <div style="flex:1;background:rgba(124,58,237,0.08);border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(124,58,237,0.2);">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:#7C3AED;letter-spacing:-1px;" id="nm-f">0</div>
-          <div style="font-size:9px;color:#7C3AED;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;">fat</div>
-          <div style="font-size:10px;color:var(--ink3);margin-top:4px;">of <span id="nm-f-t">—</span>g</div>
-        </div>
-      </div>
-
-      <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;">Log Food</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input id="nutr-search-input" type="text" placeholder="Search food (e.g. chicken breast, banana...)"
-          style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px 16px;font-size:14px;color:var(--ink);font-family:'DM Sans',sans-serif;outline:none;"
-          onkeydown="if(event.key==='Enter')searchFDA()"
-        />
-        <button onclick="searchFDA()"
-          style="background:#c9a84c;border:none;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:600;color:#1a1a2a;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-          Search
-        </button>
-      </div>
-      <div id="nutr-search-results" style="margin-bottom:16px;"></div>
-
-      <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;">Today's Log</div>
-      <div id="nutr-log-list">
-        <div style="font-size:13px;color:var(--ink3);text-align:center;padding:20px 0;">No entries yet</div>
-      </div>
-    </div>
-  </div>
 
   <!-- Race Plan Modal -->
   <div id="modal-raceplan" class="modal">
