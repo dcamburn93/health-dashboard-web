@@ -347,6 +347,61 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
     </div>
   </div>
 
+  <!-- BODY COMPOSITION CARD -->
+  <div class="card" onclick="openModal('bodycomp')" style="cursor:pointer;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="card-label">Body Composition</div>
+      <div class="card-chevron">›</div>
+    </div>
+    <div style="display:flex;gap:0;">
+      <div style="flex:1;border-right:1px solid var(--rule);padding-right:12px;">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">Weight</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <div id="bc-weight" style="font-size:28px;font-family:'DM Serif Display',serif;letter-spacing:-1px;color:var(--ink);">—</div>
+          <div style="font-size:12px;color:var(--ink3);">lbs</div>
+        </div>
+        <div id="bc-weight-goal" style="font-size:10px;color:var(--ink3);margin-top:3px;">goal: 175</div>
+      </div>
+      <div style="flex:1;padding-left:12px;border-right:1px solid var(--rule);padding-right:12px;">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">Body Fat</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <div id="bc-bf" style="font-size:28px;font-family:'DM Serif Display',serif;letter-spacing:-1px;color:var(--ink);">—</div>
+          <div style="font-size:12px;color:var(--ink3);">%</div>
+        </div>
+        <div id="bc-bf-goal" style="font-size:10px;color:var(--ink3);margin-top:3px;">goal: 15%</div>
+      </div>
+      <div style="flex:1;padding-left:12px;">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">Lean Mass</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <div id="bc-lean" style="font-size:28px;font-family:'DM Serif Display',serif;letter-spacing:-1px;color:var(--ink);">—</div>
+          <div style="font-size:12px;color:var(--ink3);">lbs</div>
+        </div>
+        <div id="bc-lean-goal" style="font-size:10px;color:var(--ink3);margin-top:3px;">goal: 149</div>
+      </div>
+    </div>
+    <!-- Progress bars -->
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:7px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <div style="font-size:9px;color:var(--ink3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;">Weight to goal</div>
+          <div id="bc-weight-pct-lbl" style="font-size:9px;color:var(--ink3);">—</div>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+          <div id="bc-weight-bar" style="height:100%;background:#c9a84c;border-radius:2px;width:0%;transition:width 0.6s ease;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <div style="font-size:9px;color:var(--ink3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;">Body fat to goal</div>
+          <div id="bc-bf-pct-lbl" style="font-size:9px;color:var(--ink3);">—</div>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+          <div id="bc-bf-bar" style="height:100%;background:#0EA5A0;border-radius:2px;width:0%;transition:width 0.6s ease;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TRAINING SUMMARY -->
   <div class="training-card" onclick="openModal('training')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -1034,6 +1089,7 @@ async function loadAll() {
   loadWeather();
   loadRaceCountdown();
   loadTrainingLoad();
+  loadBodyComp();
   loadSpotify();
   document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
   document.getElementById('refresh-time').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -1126,6 +1182,7 @@ function openModal(type) {
   document.getElementById('modal-'+type).classList.add('open');
   if (type === 'trainingload') renderTrainingLoadModal();
   if (type === 'raceplan') renderRacePlan();
+  if (type === 'bodycomp') renderBodyCompModal();
 
   const td = todayStr();
   const days7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
@@ -1941,7 +1998,273 @@ setInterval(loadAll, 5*60*1000);
   function closeTrainingLoadModal() {
     document.getElementById('trainingLoadModal').style.display = 'none';
   }
-  // ── end Training Load ───────────────────────────────────────────────────────
+
+  // ── Body Composition ────────────────────────────────────────────────────────
+  const BC_GOAL_WEIGHT = 175;
+  const BC_GOAL_BF     = 15;
+  const BC_GOAL_LEAN   = BC_GOAL_WEIGHT * (1 - BC_GOAL_BF / 100); // 148.75
+
+  let bcChartWeight = null, bcChartBf = null, bcChartLean = null;
+
+  async function loadBodyComp() {
+    try {
+      // Fetch last 90 days of body metrics
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const fromDate = ninetyDaysAgo.toISOString().slice(0, 10);
+
+      const rows = await q('body_metrics',
+        `date=gte.${fromDate}&order=date.asc&select=date,weight_lbs,body_fat_pct`
+      );
+
+      if (!rows || rows.length === 0) return;
+
+      // Most recent reading
+      const latest = [...rows].reverse().find(r => r.weight_lbs);
+      const latestBf = [...rows].reverse().find(r => r.body_fat_pct);
+
+      const weight = latest ? parseFloat(latest.weight_lbs) : null;
+      const bf     = latestBf ? parseFloat(latestBf.body_fat_pct) : null;
+      const lean   = (weight && bf) ? weight * (1 - bf / 100) : null;
+
+      // Card snapshot
+      document.getElementById('bc-weight').textContent = weight ? weight.toFixed(1) : '—';
+      document.getElementById('bc-bf').textContent     = bf     ? bf.toFixed(1)     : '—';
+      document.getElementById('bc-lean').textContent   = lean   ? lean.toFixed(1)   : '—';
+
+      // Progress bars — weight: higher is worse (we want to go down from start to goal)
+      // Use first reading as the "start" baseline
+      const firstWeight = rows.find(r => r.weight_lbs);
+      const firstBf     = rows.find(r => r.body_fat_pct);
+      const startWeight = firstWeight ? parseFloat(firstWeight.weight_lbs) : weight;
+      const startBf     = firstBf     ? parseFloat(firstBf.body_fat_pct)   : bf;
+
+      if (weight && startWeight) {
+        const totalDrop  = Math.max(startWeight - BC_GOAL_WEIGHT, 0.1);
+        const achieved   = Math.max(startWeight - weight, 0);
+        const pct        = Math.min(achieved / totalDrop * 100, 100);
+        document.getElementById('bc-weight-bar').style.width = pct + '%';
+        const remaining = (weight - BC_GOAL_WEIGHT).toFixed(1);
+        document.getElementById('bc-weight-pct-lbl').textContent =
+          remaining > 0 ? `${remaining} lbs to go` : '✓ At goal';
+      }
+
+      if (bf && startBf) {
+        const totalDrop = Math.max(startBf - BC_GOAL_BF, 0.1);
+        const achieved  = Math.max(startBf - bf, 0);
+        const pct       = Math.min(achieved / totalDrop * 100, 100);
+        document.getElementById('bc-bf-bar').style.width = pct + '%';
+        const remaining = (bf - BC_GOAL_BF).toFixed(1);
+        document.getElementById('bc-bf-pct-lbl').textContent =
+          remaining > 0 ? `${remaining}% to go` : '✓ At goal';
+      }
+
+      // Store for modal
+      window._bcData = { rows, weight, bf, lean, startWeight, startBf };
+
+    } catch(e) {
+      console.error('Body comp error:', e);
+    }
+  }
+
+  function renderBodyCompModal() {
+    const d = window._bcData;
+    if (!d) { loadBodyComp().then(renderBodyCompModal); return; }
+
+    const { rows, weight, bf, lean, startWeight, startBf } = d;
+
+    // Modal snapshot
+    document.getElementById('bcm-weight').textContent = weight ? weight.toFixed(1) : '—';
+    document.getElementById('bcm-bf').textContent     = bf     ? bf.toFixed(1)     : '—';
+    document.getElementById('bcm-lean').textContent   = lean   ? lean.toFixed(1)   : '—';
+
+    // Delta vs first reading
+    if (weight && startWeight) {
+      const delta = (weight - startWeight).toFixed(1);
+      const sign  = delta > 0 ? '+' : '';
+      const col   = delta <= 0 ? '#0EA5A0' : '#D97706';
+      document.getElementById('bcm-weight-delta').innerHTML =
+        `<span style="color:${col}">${sign}${delta} lbs since start</span>`;
+    }
+    if (bf && startBf) {
+      const delta = (bf - startBf).toFixed(1);
+      const sign  = delta > 0 ? '+' : '';
+      const col   = delta <= 0 ? '#0EA5A0' : '#D97706';
+      document.getElementById('bcm-bf-delta').innerHTML =
+        `<span style="color:${col}">${sign}${delta}% since start</span>`;
+    }
+    if (lean) {
+      const startLean = (startWeight && startBf) ? startWeight * (1 - startBf / 100) : null;
+      if (startLean) {
+        const delta = (lean - startLean).toFixed(1);
+        const sign  = delta > 0 ? '+' : '';
+        const col   = delta >= 0 ? '#3B6FE8' : '#D97706';
+        document.getElementById('bcm-lean-delta').innerHTML =
+          `<span style="color:${col}">${sign}${delta} lbs since start</span>`;
+      }
+    }
+
+    // Goal bars
+    if (weight && startWeight) {
+      const totalDrop = Math.max(startWeight - BC_GOAL_WEIGHT, 0.1);
+      const pct = Math.min(Math.max(startWeight - weight, 0) / totalDrop * 100, 100);
+      document.getElementById('bcm-weight-goal-bar').style.width = pct + '%';
+      const rem = (weight - BC_GOAL_WEIGHT).toFixed(1);
+      document.getElementById('bcm-weight-goal-lbl').textContent =
+        rem > 0 ? `${weight.toFixed(1)} → 175 lbs (${rem} to go)` : '✓ At goal';
+    }
+    if (bf && startBf) {
+      const totalDrop = Math.max(startBf - BC_GOAL_BF, 0.1);
+      const pct = Math.min(Math.max(startBf - bf, 0) / totalDrop * 100, 100);
+      document.getElementById('bcm-bf-goal-bar').style.width = pct + '%';
+      const rem = (bf - BC_GOAL_BF).toFixed(1);
+      document.getElementById('bcm-bf-goal-lbl').textContent =
+        rem > 0 ? `${bf.toFixed(1)}% → 15% (${rem}% to go)` : '✓ At goal';
+    }
+    if (lean) {
+      const startLean = (startWeight && startBf) ? startWeight * (1 - startBf / 100) : null;
+      const pct = startLean
+        ? Math.min(Math.max(lean - startLean, 0) / Math.max(BC_GOAL_LEAN - startLean, 0.1) * 100, 100)
+        : 0;
+      document.getElementById('bcm-lean-goal-bar').style.width = pct + '%';
+      const rem = (BC_GOAL_LEAN - lean).toFixed(1);
+      document.getElementById('bcm-lean-goal-lbl').textContent =
+        rem <= 0 ? '✓ At goal' : `${lean.toFixed(1)} → 149 lbs (${rem} to go)`;
+    }
+
+    // Build chart data
+    const weightRows = rows.filter(r => r.weight_lbs);
+    const bfRows     = rows.filter(r => r.body_fat_pct);
+    const leanRows   = rows.filter(r => r.weight_lbs && r.body_fat_pct);
+
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#8a8a9a', font: { size: 9 }, maxRotation: 0, maxTicksLimit: 6 }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#8a8a9a', font: { size: 9 } }
+        }
+      }
+    };
+
+    function goalLine(value, color, label) {
+      return {
+        label: label,
+        data: Array(100).fill(value),
+        borderColor: color,
+        borderWidth: 1,
+        borderDash: [4, 3],
+        pointRadius: 0,
+        fill: false
+      };
+    }
+
+    // Weight chart
+    if (bcChartWeight) { bcChartWeight.destroy(); bcChartWeight = null; }
+    bcChartWeight = new Chart(document.getElementById('bcWeightChart'), {
+      type: 'line',
+      data: {
+        labels: weightRows.map(r => r.date.slice(5)),
+        datasets: [
+          {
+            label: 'Weight',
+            data: weightRows.map(r => parseFloat(r.weight_lbs).toFixed(1)),
+            borderColor: '#c9a84c',
+            borderWidth: 2,
+            pointRadius: weightRows.length < 15 ? 3 : 0,
+            pointBackgroundColor: '#c9a84c',
+            tension: 0.3,
+            fill: false
+          },
+          { ...goalLine(BC_GOAL_WEIGHT, 'rgba(201,168,76,0.4)', 'Goal'), data: weightRows.map(() => BC_GOAL_WEIGHT) }
+        ]
+      },
+      options: { ...chartDefaults,
+        plugins: { ...chartDefaults.plugins,
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw + ' lbs' } }
+        },
+        scales: { ...chartDefaults.scales,
+          y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks,
+            callback: v => v + ' lbs'
+          }}
+        }
+      }
+    });
+
+    // BF chart
+    if (bcChartBf) { bcChartBf.destroy(); bcChartBf = null; }
+    bcChartBf = new Chart(document.getElementById('bcBfChart'), {
+      type: 'line',
+      data: {
+        labels: bfRows.map(r => r.date.slice(5)),
+        datasets: [
+          {
+            label: 'Body Fat %',
+            data: bfRows.map(r => parseFloat(r.body_fat_pct).toFixed(1)),
+            borderColor: '#0EA5A0',
+            borderWidth: 2,
+            pointRadius: bfRows.length < 15 ? 3 : 0,
+            pointBackgroundColor: '#0EA5A0',
+            tension: 0.3,
+            fill: false
+          },
+          { ...goalLine(BC_GOAL_BF, 'rgba(14,165,160,0.4)', 'Goal'), data: bfRows.map(() => BC_GOAL_BF) }
+        ]
+      },
+      options: { ...chartDefaults,
+        plugins: { ...chartDefaults.plugins,
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw + '%' } }
+        },
+        scales: { ...chartDefaults.scales,
+          y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks,
+            callback: v => v + '%'
+          }}
+        }
+      }
+    });
+
+    // Lean mass chart
+    if (bcChartLean) { bcChartLean.destroy(); bcChartLean = null; }
+    bcChartLean = new Chart(document.getElementById('bcLeanChart'), {
+      type: 'line',
+      data: {
+        labels: leanRows.map(r => r.date.slice(5)),
+        datasets: [
+          {
+            label: 'Lean Mass',
+            data: leanRows.map(r => (parseFloat(r.weight_lbs) * (1 - parseFloat(r.body_fat_pct) / 100)).toFixed(1)),
+            borderColor: '#3B6FE8',
+            borderWidth: 2,
+            pointRadius: leanRows.length < 15 ? 3 : 0,
+            pointBackgroundColor: '#3B6FE8',
+            tension: 0.3,
+            fill: false
+          },
+          { ...goalLine(BC_GOAL_LEAN.toFixed(1), 'rgba(59,111,232,0.4)', 'Goal'), data: leanRows.map(() => BC_GOAL_LEAN.toFixed(1)) }
+        ]
+      },
+      options: { ...chartDefaults,
+        plugins: { ...chartDefaults.plugins,
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw + ' lbs' } }
+        },
+        scales: { ...chartDefaults.scales,
+          y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks,
+            callback: v => v + ' lbs'
+          }}
+        }
+      }
+    });
+  }
+  // ── end Body Composition ────────────────────────────────────────────────────
+
+
 
 </script>
 
@@ -1990,5 +2313,99 @@ setInterval(loadAll, 5*60*1000);
       </p>
     </div>
   </div>
+<!-- BODY COMP MODAL -->
+<div class="modal" id="modal-bodycomp">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Body Composition</div>
+
+  <!-- Snapshot row -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">Weight</div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:3px;">
+        <div id="bcm-weight" style="font-size:26px;font-family:'DM Serif Display',serif;color:var(--ink);">—</div>
+        <div style="font-size:11px;color:var(--ink3);">lbs</div>
+      </div>
+      <div id="bcm-weight-delta" style="font-size:10px;color:var(--ink3);margin-top:2px;"></div>
+    </div>
+    <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">Body Fat</div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:3px;">
+        <div id="bcm-bf" style="font-size:26px;font-family:'DM Serif Display',serif;color:var(--ink);">—</div>
+        <div style="font-size:11px;color:var(--ink3);">%</div>
+      </div>
+      <div id="bcm-bf-delta" style="font-size:10px;color:var(--ink3);margin-top:2px;"></div>
+    </div>
+    <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:10px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">Lean Mass</div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:3px;">
+        <div id="bcm-lean" style="font-size:26px;font-family:'DM Serif Display',serif;color:var(--ink);">—</div>
+        <div style="font-size:11px;color:var(--ink3);">lbs</div>
+      </div>
+      <div id="bcm-lean-delta" style="font-size:10px;color:var(--ink3);margin-top:2px;"></div>
+    </div>
+  </div>
+
+  <!-- Goal progress -->
+  <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;">Goals · 175 lbs · 15% BF</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <div style="font-size:12px;color:var(--ink2);">Weight</div>
+        <div id="bcm-weight-goal-lbl" style="font-size:12px;color:var(--ink3);"></div>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+        <div id="bcm-weight-goal-bar" style="height:100%;background:#c9a84c;border-radius:3px;width:0%;transition:width 0.6s ease;"></div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <div style="font-size:12px;color:var(--ink2);">Body Fat %</div>
+        <div id="bcm-bf-goal-lbl" style="font-size:12px;color:var(--ink3);"></div>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+        <div id="bcm-bf-goal-bar" style="height:100%;background:#0EA5A0;border-radius:3px;width:0%;transition:width 0.6s ease;"></div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <div style="font-size:12px;color:var(--ink2);">Lean Mass (149 lbs target)</div>
+        <div id="bcm-lean-goal-lbl" style="font-size:12px;color:var(--ink3);"></div>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+        <div id="bcm-lean-goal-bar" style="height:100%;background:#3B6FE8;border-radius:3px;width:0%;transition:width 0.6s ease;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;">Trends</div>
+  <div style="position:relative;height:200px;margin-bottom:8px;">
+    <canvas id="bcWeightChart" role="img" aria-label="Weight trend chart"></canvas>
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:2px;background:#c9a84c;border-radius:1px;"></div><div style="font-size:10px;color:var(--ink3);">Weight</div></div>
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:2px;background:rgba(201,168,76,0.3);border-radius:1px;border-top:1px dashed #c9a84c;"></div><div style="font-size:10px;color:var(--ink3);">Goal (175)</div></div>
+  </div>
+
+  <div style="position:relative;height:200px;margin-bottom:8px;">
+    <canvas id="bcBfChart" role="img" aria-label="Body fat trend chart"></canvas>
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:2px;background:#0EA5A0;border-radius:1px;"></div><div style="font-size:10px;color:var(--ink3);">Body Fat %</div></div>
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:2px;background:rgba(14,165,160,0.3);border-radius:1px;border-top:1px dashed #0EA5A0;"></div><div style="font-size:10px;color:var(--ink3);">Goal (15%)</div></div>
+  </div>
+
+  <div style="position:relative;height:200px;margin-bottom:8px;">
+    <canvas id="bcLeanChart" role="img" aria-label="Lean mass trend chart"></canvas>
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:2px;background:#3B6FE8;border-radius:1px;"></div><div style="font-size:10px;color:var(--ink3);">Lean Mass</div></div>
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:2px;background:rgba(59,111,232,0.3);border-radius:1px;border-top:1px dashed #3B6FE8;"></div><div style="font-size:10px;color:var(--ink3);">Goal (149)</div></div>
+  </div>
+
+  <p style="font-size:10px;color:var(--ink3);opacity:0.5;margin-top:4px;">Lean mass = weight × (1 − body fat %). Readings with no BF% are weight-only.</p>
+</div>
+
 </body>
 </html>
