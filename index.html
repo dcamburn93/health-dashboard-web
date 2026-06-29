@@ -414,15 +414,20 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
         <div class="training-stat-unit">mi</div>
         <div class="training-stat-label">Run ›</div>
       </div>
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('bike')" style="cursor:pointer">
+        <div class="training-stat-value" id="week-bike-miles">—</div>
+        <div class="training-stat-unit">mi</div>
+        <div class="training-stat-label">Bike ›</div>
+      </div>
       <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')" style="cursor:pointer">
         <div class="training-stat-value" id="week-swim">—</div>
         <div class="training-stat-unit">yds</div>
         <div class="training-stat-label">Swim ›</div>
       </div>
-      <div class="training-stat">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('lift')" style="cursor:pointer">
         <div class="training-stat-value" id="week-lifts">—</div>
         <div class="training-stat-unit"></div>
-        <div class="training-stat-label">Lifts</div>
+        <div class="training-stat-label">Lifts ›</div>
       </div>
     </div>
   </div>
@@ -1130,11 +1135,14 @@ async function loadAll() {
   const runs = gWorkoutsWeek.filter(w=>w.sport_type?.toLowerCase().includes('run'));
   const swims = gWorkoutsWeek.filter(w=>w.sport_type?.toLowerCase().includes('swim'));
   const lifts = gWorkoutsWeek.filter(w=>sportMatch(w.sport_type,'lift'));
+  const bikes = gWorkoutsWeek.filter(w=>sportMatch(w.sport_type,'bike'));
   const totalMiles = runs.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34;
   const totalSwim = Math.round(swims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
+  const totalBikeMiles = bikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34;
   document.getElementById('week-miles').textContent = totalMiles>0?totalMiles.toFixed(1):'0';
   document.getElementById('week-swim').textContent = totalSwim>0?totalSwim:'0';
   document.getElementById('week-lifts').textContent = lifts.length;
+  document.getElementById('week-bike-miles').textContent = totalBikeMiles>0?totalBikeMiles.toFixed(1):'0';
 
   document.getElementById('plan-modal-title').textContent = `${getCurrentWeek().label} · ${getCurrentWeek().badge}`;
   // READINESS — fetch 28 days of workouts + sleep + HR
@@ -1640,6 +1648,7 @@ async function openSportDetail(sportKey) {
   const isSwim = sportKey==='swim';
   const isLift = sportKey==='lift';
   const isRun = sportKey==='run';
+  const isBike = sportKey==='bike';
 
   // Weekly totals for bar chart
   const weekTotals = {};
@@ -1662,7 +1671,7 @@ async function openSportDetail(sportKey) {
     let val;
     if (isSwim) val = Math.round(wk.dist*1.09361);
     else if (isLift) val = wk.count;
-    else val = parseFloat((wk.dist/1609.34).toFixed(1));
+    else val = parseFloat((wk.dist/1609.34).toFixed(1));  // covers both run and bike
     return {l:lbl, v:val};
   });
 
@@ -1670,7 +1679,7 @@ async function openSportDetail(sportKey) {
   const chartUnit = isSwim?'yds':isLift?'sessions':'mi';
 
   // Build HTML
-  let html = `<div class="section-label">Weekly ${isLift?'Sessions':isSwim?'Volume (m)':'Volume (mi)'} — Last 6 Weeks</div>`;
+  let html = `<div class="section-label">Weekly ${isLift?'Sessions':isSwim?'Volume (yds)':isBike?'Volume (mi)':'Volume (mi)'} — Last 6 Weeks</div>`;
   html += `<div class="bar-chart" id="sport-bar-chart" style="height:90px;margin:12px 0 16px"></div>`;
 
   // Recent sessions
@@ -1682,7 +1691,8 @@ async function openSportDetail(sportKey) {
       ? (()=>{const spm=w.duration_s/(w.distance_m/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '';
     const swimPace = isSwim&&w.distance_m>0&&w.duration_s>0
       ? (()=>{const spm=w.duration_s/(w.distance_m*1.09361/100);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/100yds';})() : '';
-    const meta = isRun?[dist,pace].filter(Boolean).join(' · '):isSwim?[dist,swimPace||dur].filter(Boolean).join(' · '):[dur].filter(Boolean).join('');
+    const avgWatts = isBike&&w.average_watts>0?Math.round(w.average_watts)+'w avg':'';
+    const meta = isRun?[dist,pace].filter(Boolean).join(' · '):isSwim?[dist,swimPace||dur].filter(Boolean).join(' · '):isBike?[dist,avgWatts,dur].filter(Boolean).join(' · '):[dur].filter(Boolean).join('');
     html += `<div class="history-item">
       <div>
         <div style="font-size:13px;font-weight:500;color:var(--ink)">${w.name||w.sport_type}</div>
