@@ -196,6 +196,28 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .stat-row:last-child { border-bottom: none; }
 .stat-key { color: var(--ink3); }
 .stat-val { font-weight: 600; color: var(--ink); }
+
+.timeline-card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 18px 20px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.15);
+  border: 2px solid rgba(201,168,76,0.7);
+  margin-top: 12px;
+}
+.tl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.tl-legend { display: flex; gap: 12px; }
+.tl-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink3); }
+.tl-legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.tl-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.tl-day { display: flex; flex-direction: column; }
+.tl-day-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ink3); text-align: center; margin-bottom: 6px; }
+.tl-day-label.tl-today { color: var(--ink2); }
+.tl-bar-stack { display: flex; flex-direction: column; gap: 3px; height: 80px; justify-content: flex-end; }
+.tl-bar { border-radius: 4px; width: 100%; }
+.tl-rest { height: 3px; background: rgba(255,255,255,0.06); border-radius: 4px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -439,6 +461,20 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
         <div class="training-stat-sub" id="week-lift-mins">— min total</div>
       </div>
     </div>
+  </div>
+
+  <!-- ACTIVITY TIMELINE -->
+  <div class="timeline-card">
+    <div class="tl-header">
+      <div class="card-label">Week at a glance</div>
+      <div class="tl-legend">
+        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#D97706"></div>Run</div>
+        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#7C3AED"></div>Bike</div>
+        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#0EA5A0"></div>Swim</div>
+        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#3B6FE8"></div>Lift</div>
+      </div>
+    </div>
+    <div class="tl-grid" id="activity-timeline"></div>
   </div>
 
 
@@ -1165,6 +1201,9 @@ async function loadAll() {
   document.getElementById('week-bike-miles').textContent = totalBikeMiles>0?totalBikeMiles.toFixed(1):'0';
 
   document.getElementById('plan-modal-title').textContent = `${getCurrentWeek().label} · ${getCurrentWeek().badge}`;
+
+  // ACTIVITY TIMELINE
+  renderActivityTimeline();
   // READINESS — fetch 28 days of workouts + sleep + HR
   const d28ago = new Date(); d28ago.setDate(d28ago.getDate()-28);
   const since28 = d28ago.toISOString().slice(0,10);
@@ -1724,6 +1763,41 @@ async function openSportDetail(sportKey) {
 
   document.getElementById('sport-detail-content').innerHTML = html;
   setTimeout(()=>barChart('sport-bar-chart', chartData, chartColor, v=>v+(isLift?' sessions':' '+chartUnit)), 50);
+}
+
+function renderActivityTimeline() {
+  const td = todayStr();
+  const days = [...Array(7)].map((_,i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay() + (d.getDay()===0?-6:1) + i);
+    return d.toISOString().slice(0,10);
+  });
+  const sportColor = s => {
+    if (!s) return null;
+    const sl = s.toLowerCase();
+    if (sl.includes('run')) return '#D97706';
+    if (sl.includes('ride')||sl.includes('bike')||sl.includes('cycling')||sl.includes('virtual')) return '#7C3AED';
+    if (sl.includes('swim')) return '#0EA5A0';
+    if (sl.includes('weight')||sl.includes('strength')||sl.includes('crossfit')||sl.includes('workout')||sl.includes('workout')) return '#3B6FE8';
+    return '#8a8a9a';
+  };
+  const maxDur = Math.max(...gWorkoutsWeek.map(w=>w.duration_s||0), 1);
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  document.getElementById('activity-timeline').innerHTML = days.map((date, i) => {
+    const dayWorkouts = gWorkoutsWeek.filter(w=>w.date===date);
+    const isToday = date===td;
+    const bars = dayWorkouts.length
+      ? dayWorkouts.map(w => {
+          const h = Math.max(10, Math.round((w.duration_s||0)/maxDur*72));
+          const c = sportColor(w.sport_type);
+          return `<div class="tl-bar" style="height:${h}px;background:${c}" title="${w.name||w.sport_type}"></div>`;
+        }).join('')
+      : `<div class="tl-rest"></div>`;
+    return `<div class="tl-day">
+      <div class="tl-day-label${isToday?' tl-today':''}">${dayNames[i]}</div>
+      <div class="tl-bar-stack">${bars}</div>
+    </div>`;
+  }).join('');
 }
 
 function closeModal() {
