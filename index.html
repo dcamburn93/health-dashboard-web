@@ -423,7 +423,6 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
         <div class="training-stat-label">Bike</div>
         <div class="training-stat-value" id="week-bike-miles">—</div>
         <div class="training-stat-unit">mi</div>
-        <div class="training-stat-sub" id="week-bike-watts">— avg watts</div>
       </div>
       <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')">
         <i class="ti ti-ripple training-stat-icon" style="color:#0EA5A0" aria-hidden="true"></i>
@@ -1154,8 +1153,6 @@ async function loadAll() {
   const totalRunDur = runs.reduce((s,w)=>s+(w.duration_s||0),0);
   const runPaceStr = totalRunDist>0&&totalRunDur>0 ? (()=>{const spm=totalRunDur/(totalRunDist/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '—';
   // avg bike watts
-  const bikeWattsArr = bikes.filter(w=>(w.average_watts||w.weighted_average_watts)>0).map(w=>w.average_watts||w.weighted_average_watts);
-  const avgBikeWatts = bikeWattsArr.length>0 ? Math.round(bikeWattsArr.reduce((s,v)=>s+v,0)/bikeWattsArr.length) : null;
   // lift mins
   const totalLiftMins = Math.round(lifts.reduce((s,w)=>s+(w.duration_s||0),0)/60);
 
@@ -1166,7 +1163,6 @@ async function loadAll() {
   document.getElementById('week-lifts').textContent = lifts.length;
   document.getElementById('week-lift-mins').textContent = totalLiftMins>0?totalLiftMins+' min total':'— min total';
   document.getElementById('week-bike-miles').textContent = totalBikeMiles>0?totalBikeMiles.toFixed(1):'0';
-  document.getElementById('week-bike-watts').textContent = avgBikeWatts?avgBikeWatts+'w avg':'— avg watts';
 
   document.getElementById('plan-modal-title').textContent = `${getCurrentWeek().label} · ${getCurrentWeek().badge}`;
   // READINESS — fetch 28 days of workouts + sleep + HR
