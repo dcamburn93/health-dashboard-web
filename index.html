@@ -8,13 +8,13 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 :root {
-  --bg: #1a1a2a;
-  --bg2: #242436;
-  --card: rgba(255,255,255,0.06);
-  --ink: #f0ede6;
-  --ink2: #c9b99a;
-  --ink3: #8a8a9a;
-  --rule: rgba(255,255,255,0.1);
+  --bg: #f4f4f6;
+  --bg2: #ebebee;
+  --card: #ffffff;
+  --ink: #111118;
+  --ink2: #444450;
+  --ink3: #888896;
+  --rule: rgba(0,0,0,0.07);
   --lift: #3B6FE8;
   --swim: #0EA5A0;
   --run: #D97706;
@@ -31,7 +31,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .header-date { font-size: 11px; color: var(--ink3); font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; }
 .refresh-row { padding: 4px 20px 16px; display: flex; justify-content: space-between; align-items: center; }
 .refresh-time { font-size: 11px; color: var(--ink3); }
-.refresh-btn { font-size: 11px; color: var(--ink3); background: var(--bg2); border: none; cursor: pointer; padding: 5px 10px; border-radius: 8px; font-family: inherit; }
+.refresh-btn { font-size: 11px; color: var(--ink3); background: var(--bg2); border: 1px solid var(--rule); cursor: pointer; padding: 5px 10px; border-radius: 8px; font-family: inherit; }
 
 /* MAIN CARDS */
 .cards { padding: 0 16px 40px; display: flex; flex-direction: column; gap: 10px; }
@@ -39,10 +39,8 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   background: var(--card);
   border-radius: 18px;
   padding: 18px 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.15);
-  border: 2px solid rgba(201,168,76,0.7);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1.5px solid var(--rule);
   cursor: pointer;
   transition: transform 0.12s, box-shadow 0.12s;
   -webkit-user-select: none;
@@ -61,10 +59,8 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   background: var(--card);
   border-radius: 18px;
   padding: 16px 18px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.15);
-  border: 2px solid rgba(201,168,76,0.7);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1.5px solid var(--rule);
   cursor: pointer;
   transition: transform 0.12s;
 }
@@ -79,17 +75,15 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   background: var(--card);
   border-radius: 18px;
   padding: 18px 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.15);
-  border: 2px solid rgba(201,168,76,0.7);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1.5px solid var(--rule);
   cursor: pointer;
   transition: transform 0.12s;
 }
 .training-card:active { transform: scale(0.985); }
 .training-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
-.training-stat { background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: background 0.15s; }
-.training-stat:active { background: rgba(255,255,255,0.08); }
+.training-stat { background: #f8f8fb; border: 1.5px solid var(--rule); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: background 0.15s; }
+.training-stat:active { background: #ebebee; }
 .training-stat-icon { font-size: 20px; margin-bottom: 6px; display: block; }
 .training-stat-value { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--ink); letter-spacing: -1px; line-height: 1; }
 .training-stat-unit { font-size: 12px; color: var(--ink3); margin-top: 1px; }
@@ -98,7 +92,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 
 /* TODAY CARD */
 .today-card {
-  background: #2a2a3e;
+  background: var(--card);
   border-radius: 18px;
   padding: 20px;
   cursor: pointer;
@@ -127,7 +121,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 /* MODAL / DETAIL */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(26,26,46,0.5);
+  background: rgba(0,0,0,0.3);
   backdrop-filter: blur(4px);
   z-index: 100;
   opacity: 0;
@@ -138,11 +132,11 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .modal {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  background: rgba(22,22,38,0.92);
+  background: rgba(250,250,252,0.97);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border-radius: 24px 24px 0 0;
-  border-top: 1px solid rgba(201,168,76,0.3);
+  border-top: 1px solid var(--rule);
   padding: 0 20px 40px;
   max-height: 88vh;
   overflow-y: auto;
@@ -151,7 +145,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   z-index: 101;
 }
 .modal.open { transform: translateY(0); }
-.modal-handle { width: 36px; height: 4px; background: var(--bg2); border-radius: 2px; margin: 12px auto 20px; }
+.modal-handle { width: 36px; height: 4px; background: #d0d0d8; border-radius: 2px; margin: 12px auto 20px; }
 .modal-title { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--ink); letter-spacing: -0.5px; margin-bottom: 20px; }
 
 /* MINI BAR CHART */
@@ -201,10 +195,8 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   background: var(--card);
   border-radius: 18px;
   padding: 18px 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.15);
-  border: 2px solid rgba(201,168,76,0.7);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1.5px solid var(--rule);
   margin-top: 12px;
 }
 .tl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -217,7 +209,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .tl-day-label.tl-today { color: var(--ink2); }
 .tl-bar-stack { display: flex; flex-direction: column; gap: 3px; height: 80px; justify-content: flex-end; }
 .tl-bar { border-radius: 4px; width: 100%; }
-.tl-rest { height: 3px; background: rgba(255,255,255,0.06); border-radius: 4px; }
+.tl-rest { height: 3px; background: rgba(0,0,0,0.07); border-radius: 4px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -233,7 +225,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 </div>
 
 <!-- WEATHER STRIP -->
-<div id="weather-strip" onclick="openModal('weather')" style="margin:0 16px 10px;border-radius:18px;padding:16px 18px;cursor:pointer;overflow:hidden;position:relative;transition:transform 0.12s;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.4)">
+<div id="weather-strip" onclick="openModal('weather')" style="margin:0 16px 10px;border-radius:18px;padding:16px 18px;cursor:pointer;overflow:hidden;position:relative;transition:transform 0.12s;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1.5px solid var(--rule)">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
       <div style="display:flex;align-items:baseline;gap:6px">
@@ -433,27 +425,27 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
       <div class="card-chevron">›</div>
     </div>
     <div class="training-stats">
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('run')">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('run')" style="border-color:#D97706;background:#fffbf5">
         <i class="ti ti-run training-stat-icon" style="color:#D97706" aria-hidden="true"></i>
         <div class="training-stat-label">Run</div>
         <div class="training-stat-value" id="week-miles">—</div>
         <div class="training-stat-unit">mi</div>
         <div class="training-stat-sub" id="week-run-pace">— avg pace</div>
       </div>
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('bike')">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('bike')" style="border-color:#7C3AED;background:#faf8ff">
         <i class="ti ti-bike training-stat-icon" style="color:#7C3AED" aria-hidden="true"></i>
         <div class="training-stat-label">Bike</div>
         <div class="training-stat-value" id="week-bike-miles">—</div>
         <div class="training-stat-unit">mi</div>
       </div>
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')" style="border-color:#0EA5A0;background:#f5fffe">
         <i class="ti ti-ripple training-stat-icon" style="color:#0EA5A0" aria-hidden="true"></i>
         <div class="training-stat-label">Swim</div>
         <div class="training-stat-value" id="week-swim">—</div>
         <div class="training-stat-unit">yds</div>
         <div class="training-stat-sub" id="week-swim-sessions">— sessions</div>
       </div>
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('lift')">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('lift')" style="border-color:#3B6FE8;background:#f6f8ff">
         <i class="ti ti-barbell training-stat-icon" style="color:#3B6FE8" aria-hidden="true"></i>
         <div class="training-stat-label">Lift</div>
         <div class="training-stat-value" id="week-lifts">—</div>
