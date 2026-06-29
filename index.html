@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Danny</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 :root {
   --bg: #1a1a2a;
@@ -89,7 +90,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .training-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
 .training-stat { background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: background 0.15s; }
 .training-stat:active { background: rgba(255,255,255,0.08); }
-.training-stat-icon { font-size: 16px; margin-bottom: 6px; }
+.training-stat-icon { font-size: 20px; margin-bottom: 6px; display: block; }
 .training-stat-value { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--ink); letter-spacing: -1px; line-height: 1; }
 .training-stat-unit { font-size: 12px; color: var(--ink3); margin-top: 1px; }
 .training-stat-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--ink3); margin-top: 6px; }
@@ -411,28 +412,28 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
     </div>
     <div class="training-stats">
       <div class="training-stat" onclick="event.stopPropagation();openSportDetail('run')">
-        <div class="training-stat-icon" style="color:#D97706">&#9654;</div>
+        <i class="ti ti-run training-stat-icon" style="color:#D97706" aria-hidden="true"></i>
         <div class="training-stat-label">Run</div>
         <div class="training-stat-value" id="week-miles">—</div>
         <div class="training-stat-unit">mi</div>
         <div class="training-stat-sub" id="week-run-pace">— avg pace</div>
       </div>
       <div class="training-stat" onclick="event.stopPropagation();openSportDetail('bike')">
-        <div class="training-stat-icon" style="color:#7C3AED">&#9651;</div>
+        <i class="ti ti-bike training-stat-icon" style="color:#7C3AED" aria-hidden="true"></i>
         <div class="training-stat-label">Bike</div>
         <div class="training-stat-value" id="week-bike-miles">—</div>
         <div class="training-stat-unit">mi</div>
         <div class="training-stat-sub" id="week-bike-watts">— avg watts</div>
       </div>
       <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')">
-        <div class="training-stat-icon" style="color:#0EA5A0">&#9632;</div>
+        <i class="ti ti-ripple training-stat-icon" style="color:#0EA5A0" aria-hidden="true"></i>
         <div class="training-stat-label">Swim</div>
         <div class="training-stat-value" id="week-swim">—</div>
         <div class="training-stat-unit">yds</div>
         <div class="training-stat-sub" id="week-swim-sessions">— sessions</div>
       </div>
       <div class="training-stat" onclick="event.stopPropagation();openSportDetail('lift')">
-        <div class="training-stat-icon" style="color:#3B6FE8">&#9632;</div>
+        <i class="ti ti-barbell training-stat-icon" style="color:#3B6FE8" aria-hidden="true"></i>
         <div class="training-stat-label">Lift</div>
         <div class="training-stat-value" id="week-lifts">—</div>
         <div class="training-stat-unit">sessions</div>
@@ -1153,7 +1154,7 @@ async function loadAll() {
   const totalRunDur = runs.reduce((s,w)=>s+(w.duration_s||0),0);
   const runPaceStr = totalRunDist>0&&totalRunDur>0 ? (()=>{const spm=totalRunDur/(totalRunDist/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '—';
   // avg bike watts
-  const bikeWattsArr = bikes.filter(w=>w.average_watts>0).map(w=>w.average_watts);
+  const bikeWattsArr = bikes.filter(w=>(w.average_watts||w.weighted_average_watts)>0).map(w=>w.average_watts||w.weighted_average_watts);
   const avgBikeWatts = bikeWattsArr.length>0 ? Math.round(bikeWattsArr.reduce((s,v)=>s+v,0)/bikeWattsArr.length) : null;
   // lift mins
   const totalLiftMins = Math.round(lifts.reduce((s,w)=>s+(w.duration_s||0),0)/60);
