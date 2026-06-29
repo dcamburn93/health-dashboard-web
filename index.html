@@ -427,16 +427,6 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
     </div>
   </div>
 
-  <!-- TODAY'S PLAN -->
-  <div class="today-card" onclick="openModal('plan')">
-    <div class="today-label">Today's Plan</div>
-    <div class="today-week" id="today-week-label"></div>
-    <div class="today-highlight">
-      <div class="today-highlight-label">Today</div>
-      <div id="today-sessions-mini"></div>
-    </div>
-    <div class="today-view-week">Tap to see full week →</div>
-  </div>
 
 
 </div>
@@ -1146,27 +1136,7 @@ async function loadAll() {
   document.getElementById('week-swim').textContent = totalSwim>0?totalSwim:'0';
   document.getElementById('week-lifts').textContent = lifts.length;
 
-  // TODAY PLAN
-  const cw = getCurrentWeek();
-  document.getElementById('today-week-label').textContent = `${cw.label} · ${cw.badge}`;
-  document.getElementById('plan-modal-title').textContent = `${cw.label} · ${cw.badge}`;
-  const sessions = PLAN[td]||[];
-  if (!sessions.length) {
-    document.getElementById('today-sessions-mini').innerHTML = '<div style="color:rgba(255,255,255,0.35);font-size:13px;padding:4px 0">Rest day</div>';
-  } else {
-    document.getElementById('today-sessions-mini').innerHTML = sessions.map(s=>{
-      const done = gWorkoutsToday.some(w=>sportMatch(w.sport_type,s.t));
-      return `<div class="session">
-        <div class="session-dot" style="background:${s.c}"></div>
-        <div class="session-info">
-          <div class="session-type">${s.l}</div>
-          <div class="session-detail">${s.d}</div>
-        </div>
-        <div class="session-check ${done?'done':''}">${done?'✓':'○'}</div>
-      </div>`;
-    }).join('');
-  }
-
+  document.getElementById('plan-modal-title').textContent = `${getCurrentWeek().label} · ${getCurrentWeek().badge}`;
   // READINESS — fetch 28 days of workouts + sleep + HR
   const d28ago = new Date(); d28ago.setDate(d28ago.getDate()-28);
   const since28 = d28ago.toISOString().slice(0,10);
