@@ -191,25 +191,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 .stat-key { color: var(--ink3); }
 .stat-val { font-weight: 600; color: var(--ink); }
 
-.timeline-card {
-  background: var(--card);
-  border-radius: 18px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  border: 1.5px solid var(--rule);
-  margin-top: 12px;
-}
-.tl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.tl-legend { display: flex; gap: 12px; }
-.tl-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink3); }
-.tl-legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.tl-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.tl-day { display: flex; flex-direction: column; }
-.tl-day-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ink3); text-align: center; margin-bottom: 6px; }
-.tl-day-label.tl-today { color: var(--ink2); }
-.tl-bar-stack { display: flex; flex-direction: column; gap: 3px; height: 80px; justify-content: flex-end; }
-.tl-bar { border-radius: 4px; width: 100%; }
-.tl-rest { height: 3px; background: rgba(0,0,0,0.07); border-radius: 4px; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -225,7 +207,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 </div>
 
 <!-- WEATHER STRIP -->
-<div id="weather-strip" onclick="openModal('weather')" style="margin:0 16px 10px;border-radius:18px;padding:16px 18px;cursor:pointer;overflow:hidden;position:relative;transition:transform 0.12s;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1.5px solid var(--rule)">
+<div id="weather-strip" onclick="openModal('weather')" style="margin:0 16px 10px;border-radius:18px;padding:16px 18px;cursor:pointer;overflow:hidden;position:relative;transition:transform 0.12s;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1.5px solid #38BDF8">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
       <div style="display:flex;align-items:baseline;gap:6px">
@@ -249,7 +231,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 
 <div class="cards">
   <!-- SLEEP -->
-  <div class="card" onclick="openModal('sleep')">
+  <div class="card" onclick="openModal('sleep')" style="border-color:#38BDF8">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div class="card-label">Sleep</div>
       <div class="card-chevron">›</div>
@@ -263,7 +245,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
 
   <!-- STEPS + CAL -->
   <div class="metrics-grid">
-    <div class="metric-card" onclick="openModal('movement')">
+    <div class="metric-card" onclick="openModal('movement')" style="border-color:#F59E0B">
       <div class="metric-value" id="steps-val">—</div>
       <div class="metric-label" style="margin-top:6px">Steps</div>
       <div class="metric-sub" id="steps-sub"></div>
@@ -274,13 +256,13 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
       <div class="metric-label">Active Cal</div>
       <div class="metric-sub" id="cal-sub"></div>
     </div>
-    <div class="metric-card" onclick="openModal('heart')">
+    <div class="metric-card" onclick="openModal('heart')" style="border-color:#F43F5E">
       <div class="metric-value" id="hr-val">—</div>
       <div class="metric-unit">bpm</div>
       <div class="metric-label">Resting HR</div>
       <div class="metric-sub" id="hr-sub"></div>
     </div>
-    <div class="metric-card" onclick="openModal('ytd')">
+    <div class="metric-card" onclick="openModal('ytd')" style="border-color:#14B8A6">
       <div class="metric-label" style="margin-bottom:6px">2026 SO FAR</div>
       <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--ink);line-height:1.8">
         <span id="ytd-run">—</span> mi run<br>
@@ -292,7 +274,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   </div>
 
   <!-- SPOTIFY CARD -->
-  <div class="card" onclick="openModal('spotify')" style="margin-bottom:10px">
+  <div class="card" onclick="openModal('spotify')" style="margin-bottom:10px;border-color:#1DB954">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div class="card-label">🎵 Listening This Week 🎵</div>
       <div class="card-chevron">›</div>
@@ -305,7 +287,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   
   
   <!-- Race Countdown Card -->
-  <div class="card" style="text-align:center;cursor:pointer;" onclick="openModal('raceplan')">
+  <div class="card" style="text-align:center;cursor:pointer;border-color:#059669;" onclick="openModal('raceplan')">
     <div class="card-label">Ironman 70.3 Salem</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:8px;">
       <svg width="90" height="90" viewBox="0 0 90 90">
@@ -338,7 +320,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   </div>
 
   <!-- Training Load Card -->
-  <div class="card" onclick="openModal('trainingload')" style="cursor:pointer;">
+  <div class="card" onclick="openModal('trainingload')" style="cursor:pointer;border-color:#6366F1">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div class="card-label">Training Load</div>
       <div class="card-chevron">›</div>
@@ -364,7 +346,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   </div>
 
   <!-- BODY COMPOSITION CARD -->
-  <div class="card" onclick="openModal('bodycomp')" style="cursor:pointer;">
+  <div class="card" onclick="openModal('bodycomp')" style="cursor:pointer;border-color:#8B5CF6">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div class="card-label">Body Composition</div>
       <div class="card-chevron">›</div>
@@ -419,7 +401,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   </div>
 
   <!-- TRAINING SUMMARY -->
-  <div class="training-card" onclick="openModal('training')">
+  <div class="training-card" onclick="openModal('training')" style="border-color:#6366F1">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div class="card-label">This Week</div>
       <div class="card-chevron">›</div>
@@ -455,19 +437,7 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
     </div>
   </div>
 
-  <!-- ACTIVITY TIMELINE -->
-  <div class="timeline-card">
-    <div class="tl-header">
-      <div class="card-label">Week at a glance</div>
-      <div class="tl-legend">
-        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#D97706"></div>Run</div>
-        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#7C3AED"></div>Bike</div>
-        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#0EA5A0"></div>Swim</div>
-        <div class="tl-legend-item"><div class="tl-legend-dot" style="background:#3B6FE8"></div>Lift</div>
-      </div>
-    </div>
-    <div class="tl-grid" id="activity-timeline"></div>
-  </div>
+</div>
 
 
 
@@ -1195,7 +1165,6 @@ async function loadAll() {
   document.getElementById('plan-modal-title').textContent = `${getCurrentWeek().label} · ${getCurrentWeek().badge}`;
 
   // ACTIVITY TIMELINE
-  renderActivityTimeline();
   // READINESS — fetch 28 days of workouts + sleep + HR
   const d28ago = new Date(); d28ago.setDate(d28ago.getDate()-28);
   const since28 = d28ago.toISOString().slice(0,10);
@@ -1755,42 +1724,6 @@ async function openSportDetail(sportKey) {
 
   document.getElementById('sport-detail-content').innerHTML = html;
   setTimeout(()=>barChart('sport-bar-chart', chartData, chartColor, v=>v+(isLift?' sessions':' '+chartUnit)), 50);
-}
-
-function renderActivityTimeline() {
-  const td = todayStr();
-  const days = [...Array(7)].map((_,i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - d.getDay() + (d.getDay()===0?-6:1) + i);
-    return d.toISOString().slice(0,10);
-  });
-  const tlSportColor = s => {
-    if (!s) return '#8a8a9a';
-    const sl = s.toLowerCase();
-    if (sl.includes('run')) return '#D97706';
-    if (sl.includes('walk')) return '#D97706';
-    if (sl.includes('ride')||sl.includes('bike')||sl.includes('cycling')||sl.includes('virtual')) return '#7C3AED';
-    if (sl.includes('swim')) return '#0EA5A0';
-    if (sl.includes('weight')||sl.includes('strength')||sl.includes('crossfit')||sl.includes('training')) return '#3B6FE8';
-    return '#8a8a9a';
-  };
-  const maxDur = Math.max(...gWorkoutsWeek.map(w=>w.duration_s||0), 1);
-  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  document.getElementById('activity-timeline').innerHTML = days.map((date, i) => {
-    const dayWorkouts = gWorkoutsWeek.filter(w=>w.date===date);
-    const isToday = date===td;
-    const bars = dayWorkouts.length
-      ? [...dayWorkouts].reverse().map(w => {
-          const h = Math.max(10, Math.round((w.duration_s||0)/maxDur*72));
-          const c = tlSportColor(w.sport_type);
-          return `<div class="tl-bar" style="height:${h}px;background:${c}" title="${w.name||w.sport_type}"></div>`;
-        }).join('')
-      : `<div class="tl-rest"></div>`;
-    return `<div class="tl-day">
-      <div class="tl-day-label${isToday?' tl-today':''}">${dayNames[i]}</div>
-      <div class="tl-bar-stack">${bars}</div>
-    </div>`;
-  }).join('');
 }
 
 function closeModal() {
