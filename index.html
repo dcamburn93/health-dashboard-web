@@ -1772,13 +1772,14 @@ function renderActivityTimeline() {
     d.setDate(d.getDate() - d.getDay() + (d.getDay()===0?-6:1) + i);
     return d.toISOString().slice(0,10);
   });
-  const sportColor = s => {
-    if (!s) return null;
+  const tlSportColor = s => {
+    if (!s) return '#8a8a9a';
     const sl = s.toLowerCase();
     if (sl.includes('run')) return '#D97706';
+    if (sl.includes('walk')) return '#D97706';
     if (sl.includes('ride')||sl.includes('bike')||sl.includes('cycling')||sl.includes('virtual')) return '#7C3AED';
     if (sl.includes('swim')) return '#0EA5A0';
-    if (sl.includes('weight')||sl.includes('strength')||sl.includes('crossfit')||sl.includes('workout')||sl.includes('workout')) return '#3B6FE8';
+    if (sl.includes('weight')||sl.includes('strength')||sl.includes('crossfit')||sl.includes('training')) return '#3B6FE8';
     return '#8a8a9a';
   };
   const maxDur = Math.max(...gWorkoutsWeek.map(w=>w.duration_s||0), 1);
@@ -1787,9 +1788,9 @@ function renderActivityTimeline() {
     const dayWorkouts = gWorkoutsWeek.filter(w=>w.date===date);
     const isToday = date===td;
     const bars = dayWorkouts.length
-      ? dayWorkouts.map(w => {
+      ? [...dayWorkouts].reverse().map(w => {
           const h = Math.max(10, Math.round((w.duration_s||0)/maxDur*72));
-          const c = sportColor(w.sport_type);
+          const c = tlSportColor(w.sport_type);
           return `<div class="tl-bar" style="height:${h}px;background:${c}" title="${w.name||w.sport_type}"></div>`;
         }).join('')
       : `<div class="tl-rest"></div>`;
