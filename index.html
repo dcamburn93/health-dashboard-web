@@ -86,13 +86,14 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
   transition: transform 0.12s;
 }
 .training-card:active { transform: scale(0.985); }
-.training-stats { display: flex; gap: 0; margin-top: 4px; }
-.training-stat { flex: 1; padding: 10px 0; border-right: 1px solid var(--rule); text-align: center; }
-.training-stat:first-child { text-align: left; }
-.training-stat:last-child { border-right: none; text-align: right; }
-.training-stat-value { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--ink); letter-spacing: -0.5px; }
-.training-stat-unit { font-size: 11px; color: var(--ink3); }
-.training-stat-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--ink3); margin-top: 3px; }
+.training-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.training-stat { background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: background 0.15s; }
+.training-stat:active { background: rgba(255,255,255,0.08); }
+.training-stat-icon { font-size: 16px; margin-bottom: 6px; }
+.training-stat-value { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--ink); letter-spacing: -1px; line-height: 1; }
+.training-stat-unit { font-size: 12px; color: var(--ink3); margin-top: 1px; }
+.training-stat-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--ink3); margin-top: 6px; }
+.training-stat-sub { font-size: 11px; color: var(--ink3); margin-top: 3px; }
 
 /* TODAY CARD */
 .today-card {
@@ -409,25 +410,33 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', s
       <div class="card-chevron">›</div>
     </div>
     <div class="training-stats">
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('run')" style="cursor:pointer">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('run')">
+        <div class="training-stat-icon" style="color:#D97706">&#9654;</div>
+        <div class="training-stat-label">Run</div>
         <div class="training-stat-value" id="week-miles">—</div>
         <div class="training-stat-unit">mi</div>
-        <div class="training-stat-label">Run ›</div>
+        <div class="training-stat-sub" id="week-run-pace">— avg pace</div>
       </div>
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('bike')" style="cursor:pointer">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('bike')">
+        <div class="training-stat-icon" style="color:#7C3AED">&#9651;</div>
+        <div class="training-stat-label">Bike</div>
         <div class="training-stat-value" id="week-bike-miles">—</div>
         <div class="training-stat-unit">mi</div>
-        <div class="training-stat-label">Bike ›</div>
+        <div class="training-stat-sub" id="week-bike-watts">— avg watts</div>
       </div>
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')" style="cursor:pointer">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('swim')">
+        <div class="training-stat-icon" style="color:#0EA5A0">&#9632;</div>
+        <div class="training-stat-label">Swim</div>
         <div class="training-stat-value" id="week-swim">—</div>
         <div class="training-stat-unit">yds</div>
-        <div class="training-stat-label">Swim ›</div>
+        <div class="training-stat-sub" id="week-swim-sessions">— sessions</div>
       </div>
-      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('lift')" style="cursor:pointer">
+      <div class="training-stat" onclick="event.stopPropagation();openSportDetail('lift')">
+        <div class="training-stat-icon" style="color:#3B6FE8">&#9632;</div>
+        <div class="training-stat-label">Lift</div>
         <div class="training-stat-value" id="week-lifts">—</div>
-        <div class="training-stat-unit"></div>
-        <div class="training-stat-label">Lifts ›</div>
+        <div class="training-stat-unit">sessions</div>
+        <div class="training-stat-sub" id="week-lift-mins">— min total</div>
       </div>
     </div>
   </div>
@@ -1139,10 +1148,24 @@ async function loadAll() {
   const totalMiles = runs.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34;
   const totalSwim = Math.round(swims.reduce((s,w)=>s+(w.distance_m||0),0)*1.09361);
   const totalBikeMiles = bikes.reduce((s,w)=>s+(w.distance_m||0),0)/1609.34;
+  // avg run pace
+  const totalRunDist = runs.reduce((s,w)=>s+(w.distance_m||0),0);
+  const totalRunDur = runs.reduce((s,w)=>s+(w.duration_s||0),0);
+  const runPaceStr = totalRunDist>0&&totalRunDur>0 ? (()=>{const spm=totalRunDur/(totalRunDist/1609.34);return Math.floor(spm/60)+':'+(Math.round(spm%60)+'').padStart(2,'0')+'/mi';})() : '—';
+  // avg bike watts
+  const bikeWattsArr = bikes.filter(w=>w.average_watts>0).map(w=>w.average_watts);
+  const avgBikeWatts = bikeWattsArr.length>0 ? Math.round(bikeWattsArr.reduce((s,v)=>s+v,0)/bikeWattsArr.length) : null;
+  // lift mins
+  const totalLiftMins = Math.round(lifts.reduce((s,w)=>s+(w.duration_s||0),0)/60);
+
   document.getElementById('week-miles').textContent = totalMiles>0?totalMiles.toFixed(1):'0';
+  document.getElementById('week-run-pace').textContent = runs.length>0?runPaceStr+' avg pace':'— avg pace';
   document.getElementById('week-swim').textContent = totalSwim>0?totalSwim:'0';
+  document.getElementById('week-swim-sessions').textContent = swims.length+' session'+(swims.length!==1?'s':'');
   document.getElementById('week-lifts').textContent = lifts.length;
+  document.getElementById('week-lift-mins').textContent = totalLiftMins>0?totalLiftMins+' min total':'— min total';
   document.getElementById('week-bike-miles').textContent = totalBikeMiles>0?totalBikeMiles.toFixed(1):'0';
+  document.getElementById('week-bike-watts').textContent = avgBikeWatts?avgBikeWatts+'w avg':'— avg watts';
 
   document.getElementById('plan-modal-title').textContent = `${getCurrentWeek().label} · ${getCurrentWeek().badge}`;
   // READINESS — fetch 28 days of workouts + sleep + HR
